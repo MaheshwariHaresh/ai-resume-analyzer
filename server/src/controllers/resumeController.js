@@ -1,0 +1,126 @@
+import fs from "fs/promises";
+import Resume from "../models/Resume.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import apiError from "../utils/apiError.js";
+import { uploadResumeToCloudinary } from "../services/cloudinaryService.js";
+import { analyzeResume } from "../services/geminiService.js";
+
+/**
+ * @desc Upload Resume
+ * @route POST /api/resumes/upload
+ * @access Private
+ */
+
+export const uploadResume = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new apiError("Please upload a resume.", 400);
+  }
+
+  let analysis;
+
+  try {
+    // Upload to Cloudinary
+    const uploadResult = await uploadResumeToCloudinary(req.file.path);
+
+    // Analyze Resume
+    const analysis = await analyzeResume(req.file.path, req.file.mimetype);
+
+    // Save MongoDB
+    const resume = await Resume.create({
+      user: req.user._id,
+
+      originalFileName: req.file.originalname,
+
+      cloudinaryId: uploadResult.publicId,
+
+      fileUrl: uploadResult.secureUrl,
+
+      analysis,
+
+      uploadStatus: "completed",
+    });
+
+    // Delete local file
+    await fs.unlink(req.file.path);
+
+    return res.status(201).json({
+      success: true,
+      message: "Resume analyzed successfully.",
+      data: resume,
+    });
+  } catch (error) {
+    if (req.file?.path) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch {}
+    }
+
+    throw error;
+  }
+});
+
+/**
+ * @desc Get All Resumes of Logged-in User
+ * @route GET /api/resumes
+ * @access Private
+ */
+export const getMyResumes = asyncHandler(async (req, res) => {
+  const resumes = await Resume.find({
+    user: req.user._id,
+  }).sort({ createdAt: -1 });
+
+  return res.status(200).json({
+    success: true,
+    count: resumes.length,
+    data: resumes,
+  });
+});
+
+/**
+ * @desc Get Single Resume
+ * @route GET /api/resumes/:id
+ * @access Private
+ */
+export const getResumeById = asyncHandler(async (req, res) => {
+  const resume = await Resume.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+  });
+
+  if (!resume) {
+    throw new apiError("Resume not found.", 404);
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: resume,
+  });
+});
+
+/**
+ * @desc Delete Resume
+ * @route DELETE /api/resumes/:id
+ * @access Private
+ */
+export const deleteResume = asyncHandler(async (req, res) => {
+  const resume = await Resume.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+  });
+
+  if (!resume) {
+    throw new apiError("Resume not found.", 404);
+  }
+
+  // Delete uploaded file if it exists
+  if (resume.fileUrl && fs.existsSync(resume.fileUrl)) {
+    fs.unlinkSync(resume.fileUrl);
+  }
+
+  await Resume.findByIdAndDelete(resume._id);
+
+  return res.status(200).json({
+    success: true,
+    message: "Resume deleted successfully.",
+  });
+});
