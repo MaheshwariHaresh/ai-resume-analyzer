@@ -1,70 +1,59 @@
 import Resume from "../models/Resume.js";
-import ResumeAnalysis from "../models/ResumeAnalysis.js";
-import InterviewSession from "../models/InterviewSession.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-export const getDashboard = async (req, res) => {
-  try {
-    // Logged-in user's resumes
-    const resumes = await Resume.find({ user: req.user._id }).select("_id");
+export const getDashboard = asyncHandler(async (req, res) => {
+  const resumes = await Resume.find({
+    user: req.user._id,
+  })
+    .select(
+      "originalFileName analysis.atsScore analysis.overallVerdict uploadStatus createdAt",
+    )
+    .sort({ createdAt: -1 })
+    .lean();
 
-    const resumeIds = resumes.map((resume) => resume._id);
+  // Total resumes
+  const totalResumes = resumes.length;
 
-    // Statistics
-    const totalResumes = resumeIds.length;
+  // Completed resumes
+  const analyzedResumes = resumes.filter(
+    (resume) => resume.uploadStatus === "completed",
+  );
 
-    const totalAnalyses = await ResumeAnalysis.countDocuments({
-      resume: { $in: resumeIds },
-    });
+  // ATS scores
+  const scores = analyzedResumes
+    .map((resume) => resume.analysis?.atsScore)
+    .filter((score) => typeof score === "number");
 
-    const totalInterviews = await InterviewSession.countDocuments({
-      resume: { $in: resumeIds },
-    });
+  // Average ATS score
+  const averageATSScore = scores.length
+    ? Math.round(
+        scores.reduce((total, score) => total + score, 0) / scores.length,
+      )
+    : 0;
 
-    const completedInterviews = await InterviewSession.countDocuments({
-      resume: { $in: resumeIds },
-      status: "completed",
-    });
+  // Highest ATS score
+  const highestATSScore = scores.length ? Math.max(...scores) : 0;
 
-    // Latest Resume
-    const latestResume = await Resume.findOne({
-      user: req.user._id,
-    }).sort({ createdAt: -1 });
+  // Latest resume
+  const latestResume = resumes[0] || null;
 
-    // Latest Analysis
-    const latestAnalysis = await ResumeAnalysis.findOne({
-      resume: { $in: resumeIds },
-    })
-      .populate("resume", "originalFileName")
-      .sort({ createdAt: -1 });
+  // Recent resumes
+  const recentResumes = resumes.slice(0, 5);
 
-    // Latest Interview
-    const latestInterview = await InterviewSession.findOne({
-      resume: { $in: resumeIds },
-    })
-      .populate("resume", "originalFileName")
-      .sort({ createdAt: -1 });
+  return res.status(200).json({
+    success: true,
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        statistics: {
-          totalResumes,
-          totalAnalyses,
-          totalInterviews,
-          completedInterviews,
-        },
-
-        latestResume,
-        latestAnalysis,
-        latestInterview,
+    data: {
+      statistics: {
+        totalResumes,
+        analyzedResumes: analyzedResumes.length,
+        averageATSScore,
+        highestATSScore,
       },
-    });
-  } catch (error) {
-    console.error(error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
-  }
-};
+      latestResume,
+
+      recentResumes,
+    },
+  });
+});

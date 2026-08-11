@@ -1,9 +1,9 @@
-import fs from "fs/promises";
 import Resume from "../models/Resume.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import apiError from "../utils/apiError.js";
 import { uploadResumeToCloudinary } from "../services/cloudinaryService.js";
 import { analyzeResume } from "../services/geminiService.js";
+import { v2 as cloudinary } from "cloudinary";
 
 /**
  * @desc Upload Resume
@@ -65,9 +65,11 @@ export const uploadResume = asyncHandler(async (req, res) => {
  * @access Private
  */
 export const getMyResumes = asyncHandler(async (req, res) => {
-  const resumes = await Resume.find({
-    user: req.user._id,
-  }).sort({ createdAt: -1 });
+  const resumes = await Resume.find({ user: req.user._id })
+    .select(
+      "originalFileName fileUrl uploadStatus analysis.atsScore analysis.overallVerdict createdAt",
+    )
+    .sort({ createdAt: -1 });
 
   return res.status(200).json({
     success: true,
@@ -102,6 +104,7 @@ export const getResumeById = asyncHandler(async (req, res) => {
  * @route DELETE /api/resumes/:id
  * @access Private
  */
+
 export const deleteResume = asyncHandler(async (req, res) => {
   const resume = await Resume.findOne({
     _id: req.params.id,
@@ -112,12 +115,15 @@ export const deleteResume = asyncHandler(async (req, res) => {
     throw new apiError("Resume not found.", 404);
   }
 
-  // Delete uploaded file if it exists
-  if (resume.fileUrl && fs.existsSync(resume.fileUrl)) {
-    fs.unlinkSync(resume.fileUrl);
+  // Delete file from Cloudinary
+  if (resume.cloudinaryId) {
+    await cloudinary.uploader.destroy(resume.cloudinaryId, {
+      resource_type: "raw",
+    });
   }
 
-  await Resume.findByIdAndDelete(resume._id);
+  // Delete MongoDB record
+  await resume.deleteOne();
 
   return res.status(200).json({
     success: true,

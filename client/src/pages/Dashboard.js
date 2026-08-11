@@ -5,50 +5,13 @@ import {
   TrendingUp,
   ArrowRight,
   Sparkles,
+  Eye,
+  Calendar,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
-const stats = [
-  {
-    title: "Total Analyses",
-    value: "12",
-    icon: FileText,
-    color: "bg-blue-100 text-blue-600",
-  },
-  {
-    title: "Average ATS",
-    value: "84%",
-    icon: TrendingUp,
-    color: "bg-green-100 text-green-600",
-  },
-  {
-    title: "Interview Sessions",
-    value: "18",
-    icon: Brain,
-    color: "bg-purple-100 text-purple-600",
-  },
-];
-
-const recent = [
-  {
-    id: 1,
-    name: "Backend_Resume.pdf",
-    score: "91%",
-    date: "Today",
-  },
-  {
-    id: 2,
-    name: "Frontend_CV.pdf",
-    score: "84%",
-    date: "Yesterday",
-  },
-  {
-    id: 3,
-    name: "NodeJS.docx",
-    score: "79%",
-    date: "2 Days Ago",
-  },
-];
+import { Link, useNavigate } from "react-router-dom";
+import { getDashboardData } from "../apis/dashboardApi.js";
+import { useEffect, useState } from "react";
 
 const actions = [
   {
@@ -72,9 +35,71 @@ const actions = [
 ];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await getDashboardData();
+
+        setDashboard(response.data);
+      } catch (error) {
+        console.error("Dashboard Error:", error);
+
+        setError(error.response?.data?.message || "Failed to load dashboard.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  // Loading State
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+
+          <p className="mt-4 text-gray-500">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+        <p className="text-red-600 font-medium">{error}</p>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const statistics = dashboard?.statistics || {};
+
+  const recentResumes = dashboard?.recentResumes || [];
+
   return (
     <div className="space-y-8">
-      {/* Welcome Banner */}
+      {/* =========================
+          Welcome Banner
+      ========================= */}
 
       <div className="rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
         <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
@@ -97,32 +122,57 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* =========================
+          Statistics
+      ========================= */}
 
       <div className="grid md:grid-cols-3 gap-6">
-        {stats.map((item) => {
-          const Icon = item.icon;
+        {/* Total Resumes */}
 
-          return (
-            <div
-              key={item.title}
-              className="bg-white rounded-2xl border p-6 shadow-sm"
-            >
-              <div
-                className={`w-14 h-14 rounded-xl flex items-center justify-center ${item.color}`}
-              >
-                <Icon size={28} />
-              </div>
+        <div className="bg-white rounded-2xl border p-6 shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+            <FileText size={28} />
+          </div>
 
-              <h3 className="text-gray-500 mt-5">{item.title}</h3>
+          <h3 className="text-gray-500 mt-5">Total Resumes</h3>
 
-              <p className="text-3xl font-bold mt-2">{item.value}</p>
-            </div>
-          );
-        })}
+          <p className="text-3xl font-bold mt-2">
+            {statistics.totalResumes || 0}
+          </p>
+        </div>
+
+        {/* Average ATS */}
+
+        <div className="bg-white rounded-2xl border p-6 shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-green-100 text-green-600 flex items-center justify-center">
+            <TrendingUp size={28} />
+          </div>
+
+          <h3 className="text-gray-500 mt-5">Average ATS Score</h3>
+
+          <p className="text-3xl font-bold mt-2 text-green-600">
+            {statistics.averageATSScore || 0}%
+          </p>
+        </div>
+
+        {/* Analyzed Resumes */}
+
+        <div className="bg-white rounded-2xl border p-6 shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+            <Brain size={28} />
+          </div>
+
+          <h3 className="text-gray-500 mt-5">Analyzed Resumes</h3>
+
+          <p className="text-3xl font-bold mt-2">
+            {statistics.analyzedResumes || 0}
+          </p>
+        </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* =========================
+          Quick Actions
+      ========================= */}
 
       <div>
         <h2 className="text-2xl font-bold mb-5">Quick Actions</h2>
@@ -150,63 +200,238 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Analysis */}
+      {/* =========================
+          Recent Analyses
+      ========================= */}
 
       <div className="bg-white rounded-2xl border shadow-sm">
         <div className="flex justify-between items-center p-6 border-b">
           <div>
             <h2 className="text-2xl font-bold">Recent Analyses</h2>
 
-            <p className="text-gray-500">Your latest AI reports</p>
+            <p className="text-gray-500">Your latest resume analysis reports</p>
           </div>
 
-          <Link to="/dashboard/history" className="text-blue-600 font-medium">
+          <Link
+            to="/dashboard/history"
+            className="text-blue-600 font-medium hover:underline"
+          >
             View All
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-6 py-4">Resume</th>
+        {recentResumes.length === 0 ? (
+          /* Empty State */
 
-                <th className="text-left px-6 py-4">ATS Score</th>
+          <div className="p-10 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto">
+              <FileText className="text-blue-600" size={30} />
+            </div>
 
-                <th className="text-left px-6 py-4">Date</th>
+            <h3 className="text-lg font-semibold mt-4">No resumes yet</h3>
 
-                <th className="text-left px-6 py-4"></th>
-              </tr>
-            </thead>
+            <p className="text-gray-500 mt-2">
+              Upload your first resume to get an AI-powered ATS analysis.
+            </p>
 
-            <tbody>
-              {recent.map((item) => (
-                <tr key={item.id} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-5">{item.name}</td>
+            <Link
+              to="/dashboard/analyze"
+              className="inline-flex items-center gap-2 mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold"
+            >
+              Analyze Resume
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        ) : (
+          /* Resume Table */
 
-                  <td className="px-6 py-5 font-semibold text-green-600">
-                    {item.score}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-6 py-4">Resume</th>
 
-                  <td className="px-6 py-5 text-gray-500">{item.date}</td>
+                  <th className="text-left px-6 py-4">ATS Score</th>
 
-                  <td className="px-6 py-5">
-                    <button className="text-blue-600 hover:underline">
-                      View Report
-                    </button>
-                  </td>
+                  <th className="text-left px-6 py-4">Status</th>
+
+                  <th className="text-left px-6 py-4">Date</th>
+
+                  <th className="text-center px-6 py-4">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {recentResumes.map((resume) => {
+                  const score = resume.analysis?.atsScore || 0;
+
+                  const isCompleted = resume.uploadStatus === "completed";
+
+                  return (
+                    <tr
+                      key={resume._id}
+                      className="border-t hover:bg-gray-50 transition"
+                    >
+                      {/* Resume Name */}
+
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
+                            <FileText size={20} className="text-blue-600" />
+                          </div>
+
+                          <div>
+                            <h3 className="font-semibold">
+                              {resume.originalFileName}
+                            </h3>
+
+                            <p className="text-sm text-gray-500">
+                              Resume Document
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* ATS Score */}
+
+                      <td className="px-6 py-5">
+                        {isCompleted ? (
+                          <span
+                            className={`font-bold ${
+                              score >= 80
+                                ? "text-green-600"
+                                : score >= 60
+                                  ? "text-yellow-600"
+                                  : "text-red-600"
+                            }`}
+                          >
+                            {score}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">--</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+
+                      <td className="px-6 py-5">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            isCompleted
+                              ? "bg-green-100 text-green-700"
+                              : resume.uploadStatus === "analyzing"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {resume.uploadStatus}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Calendar size={16} />
+
+                          {new Date(resume.createdAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Action */}
+
+                      <td className="px-6 py-5">
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() =>
+                              navigate(`/dashboard/resume/${resume._id}`)
+                            }
+                            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600"
+                            title="View Report"
+                          >
+                            <Eye size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* =========================
+          Score Overview
+      ========================= */}
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Highest Score */}
+
+        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-500">Highest ATS Score</h3>
+
+              <p className="text-4xl font-bold text-blue-600 mt-2">
+                {statistics.highestATSScore || 0}%
+              </p>
+            </div>
+
+            <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center">
+              <TrendingUp size={28} className="text-blue-600" />
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-500 mt-4">
+            Your best resume performance so far.
+          </p>
+        </div>
+
+        {/* Analyzed Percentage */}
+
+        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-500">Analysis Progress</h3>
+
+              <p className="text-4xl font-bold text-purple-600 mt-2">
+                {statistics.totalResumes
+                  ? Math.round(
+                      (statistics.analyzedResumes / statistics.totalResumes) *
+                        100,
+                    )
+                  : 0}
+                %
+              </p>
+            </div>
+
+            <div className="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Brain size={28} className="text-purple-600" />
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-500 mt-4">
+            Percentage of your uploaded resumes that have been analyzed.
+          </p>
         </div>
       </div>
 
-      {/* AI Tip */}
+      {/* =========================
+          AI Tip
+      ========================= */}
 
       <div className="rounded-2xl border bg-gradient-to-r from-yellow-50 to-orange-50 p-6">
         <div className="flex gap-4">
-          <div className="w-14 h-14 rounded-xl bg-yellow-100 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-yellow-100 flex items-center justify-center flex-shrink-0">
             <Sparkles className="text-orange-500" />
           </div>
 
@@ -214,9 +439,9 @@ const Dashboard = () => {
             <h3 className="text-xl font-bold">AI Tip of the Day</h3>
 
             <p className="mt-2 text-gray-600 leading-7">
-              Tailor your resume for every job application by matching the
-              keywords from the job description. This can significantly improve
-              your ATS score and increase your chances of getting shortlisted.
+              Tailor your resume for every job application by matching keywords
+              from the job description. This can significantly improve your ATS
+              score and increase your chances of getting shortlisted.
             </p>
           </div>
         </div>

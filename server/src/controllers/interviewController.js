@@ -1,180 +1,255 @@
 import Resume from "../models/Resume.js";
 import InterviewSession from "../models/InterviewSession.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import apiError from "../utils/apiError.js";
+import {
+  generateInterviewQuestions as generateAIQuestions,
+  evaluateInterviewAnswers,
+} from "../services/geminiService.js";
 
-/**
- * @desc Generate Interview Questions
- * @route POST /api/interview/questions/:resumeId
- * @access Private
- */
-export const generateInterviewQuestions = async (req, res) => {
-  try {
-    const { resumeId } = req.params;
+export const generateInterviewQuestions = asyncHandler(async (req, res) => {
+  const { resumeId } = req.params;
 
-    const resume = await Resume.findOne({
-      _id: resumeId,
-      user: req.user._id,
-    });
+  const {
+    interviewType = "Technical",
+    difficulty = "Medium",
+    questionCount = 10,
+  } = req.body;
 
-    if (!resume) {
-      return res.status(404).json({
-        success: false,
-        message: "Resume not found.",
-      });
-    }
+  // Find user's resume
+  const resume = await Resume.findOne({
+    _id: resumeId,
+    user: req.user._id,
+  });
 
-    /*
-        ==========================================
-            AI Question Generation Will Come Here
-        ==========================================
-        */
-
-    const questions = [
-      {
-        question: "Tell me about yourself.",
-        difficulty: "Easy",
-      },
-      {
-        question: "Explain the Event Loop in Node.js.",
-        difficulty: "Medium",
-      },
-      {
-        question: "What is JWT Authentication?",
-        difficulty: "Medium",
-      },
-      {
-        question: "Difference between SQL and MongoDB?",
-        difficulty: "Medium",
-      },
-      {
-        question: "Explain REST API.",
-        difficulty: "Easy",
-      },
-      {
-        question: "What is Middleware in Express?",
-        difficulty: "Easy",
-      },
-      {
-        question: "Explain Authentication vs Authorization.",
-        difficulty: "Medium",
-      },
-      {
-        question: "How does MongoDB store data?",
-        difficulty: "Medium",
-      },
-      {
-        question: "Explain MVC Architecture.",
-        difficulty: "Hard",
-      },
-      {
-        question: "How would you optimize a backend application?",
-        difficulty: "Hard",
-      },
-    ];
-
-    const session = await InterviewSession.create({
-      resume: resume._id,
-      questions,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Interview questions generated successfully.",
-      data: session,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+  if (!resume) {
+    throw new apiError("Resume not found.", 404);
   }
-};
 
+  // Resume must be analyzed first
+  if (resume.uploadStatus !== "completed") {
+    throw new apiError(
+      "Please analyze your resume before starting an interview.",
+      400,
+    );
+  }
+
+  // Validate interview type
+  const allowedInterviewTypes = ["Technical", "HR", "Behavioral", "Mixed"];
+
+  if (!allowedInterviewTypes.includes(interviewType)) {
+    throw new apiError("Invalid interview type.", 400);
+  }
+
+  // Validate difficulty
+  const allowedDifficulties = ["Easy", "Medium", "Hard"];
+
+  if (!allowedDifficulties.includes(difficulty)) {
+    throw new apiError("Invalid difficulty level.", 400);
+  }
+
+  // Validate question count
+  const allowedQuestionCounts = [5, 10, 15, 20];
+
+  if (!allowedQuestionCounts.includes(Number(questionCount))) {
+    throw new apiError("Invalid question count.", 400);
+  }
+
+  // Generate questions using Gemini
+  const questions = await generateAIQuestions(
+    resume,
+    interviewType,
+    difficulty,
+    Number(questionCount),
+  );
+
+  if (!questions || questions.length === 0) {
+    throw new apiError("Failed to generate interview questions.", 500);
+  }
+
+  // Create interview session
+  const session = await InterviewSession.create({
+    user: req.user._id,
+    resume: resume._id,
+
+    interviewType,
+    difficulty,
+    questionCount: Number(questionCount),
+
+    questions,
+
+    status: "pending",
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: "Interview questions generated successfully.",
+    data: session,
+  });
+});
+
+export const saveInterviewProgress = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { answers } = req.body;
+
+  if (!Array.isArray(answers)) {
+    throw new apiError("Invalid answers data.", 400);
+  }
+
+  const session = await InterviewSession.findOne({
+    _id: sessionId,
+    user: req.user._id,
+  });
+
+  if (!session) {
+    throw new apiError("Interview session not found.", 404);
+  }
+
+  // Don't allow changes after completion
+  if (session.status === "completed") {
+    throw new apiError("This interview has already been completed.", 400);
+  }
+
+  session.answers = answers;
+
+  // Once the user starts answering, mark it in-progress
+  if (session.status === "pending") {
+    session.status = "in-progress";
+  }
+
+  await session.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Interview progress saved successfully.",
+    data: {
+      answers: session.answers,
+      status: session.status,
+    },
+  });
+});
 /**
  * @desc Submit Interview Answers
  * @route POST /api/interview/submit/:sessionId
  * @access Private
  */
-export const submitInterview = async (req, res) => {
-  try {
-    const { sessionId } = req.params;
+export const submitInterview = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { answers } = req.body;
 
-    const { answers } = req.body;
+  // Find interview session belonging to logged-in user
+  const session = await InterviewSession.findOne({
+    _id: sessionId,
+    user: req.user._id,
+  });
 
-    const session = await InterviewSession.findById(sessionId);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Interview session not found.",
-      });
-    }
-
-    /*
-        ======================================
-            AI Evaluation Will Come Here
-        ======================================
-        */
-
-    const feedback = answers.map((item) => ({
-      question: item.question,
-      score: 8,
-      suggestion: "Good answer. Add more practical examples.",
-    }));
-
-    session.answers = answers;
-    session.feedback = feedback;
-    session.overallScore = 80;
-    session.status = "completed";
-
-    await session.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Interview submitted successfully.",
-      data: session,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+  if (!session) {
+    throw new apiError("Interview session not found.", 404);
   }
-};
+
+  // Prevent submitting an already completed interview
+  if (session.status === "completed") {
+    throw new apiError("Interview has already been submitted.", 400);
+  }
+
+  // Validate answers
+  if (!answers || !Array.isArray(answers)) {
+    throw new apiError("Answers are required.", 400);
+  }
+
+  if (answers.length !== session.questions.length) {
+    throw new apiError(
+      `Please answer all ${session.questions.length} questions.`,
+      400,
+    );
+  }
+
+  // Validate each answer
+  const formattedAnswers = session.questions.map((question, index) => ({
+    question: question.question,
+    answer: answers[index]?.answer?.trim() || "",
+  }));
+
+  // Make sure every question has an answer
+  const unanswered = formattedAnswers.some((item) => !item.answer);
+
+  if (unanswered) {
+    throw new apiError(
+      "Please answer all questions before submitting the interview.",
+      400,
+    );
+  }
+
+  // Save answers first
+  session.answers = formattedAnswers;
+  session.status = "in-progress";
+
+  await session.save();
+
+  // AI evaluation will come here
+  const evaluation = await evaluateInterviewAnswers(session);
+
+  if (
+    !evaluation ||
+    !Array.isArray(evaluation.feedback) ||
+    typeof evaluation.overallScore !== "number"
+  ) {
+    throw new apiError("Failed to evaluate interview answers.", 500);
+  }
+
+  // Save AI feedback and final score
+  session.feedback = evaluation.feedback;
+  session.overallScore = evaluation.overallScore;
+  session.status = "completed";
+
+  await session.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Interview submitted and evaluated successfully.",
+    data: session,
+  });
+});
 
 /**
  * @desc Get Interview History
  * @route GET /api/interview/history
  * @access Private
  */
-export const getInterviewHistory = async (req, res) => {
-  try {
-    const resumes = await Resume.find({
-      user: req.user._id,
-    }).select("_id");
+export const getInterviewHistory = asyncHandler(async (req, res) => {
+  const resumes = await Resume.find({
+    user: req.user._id,
+  }).select("_id");
 
-    const resumeIds = resumes.map((resume) => resume._id);
+  const resumeIds = resumes.map((resume) => resume._id);
 
-    const history = await InterviewSession.find({
-      resume: { $in: resumeIds },
-    })
-      .populate("resume", "originalFileName")
-      .sort({ createdAt: -1 });
+  const history = await InterviewSession.find({
+    resume: { $in: resumeIds },
+  })
+    .populate("resume", "originalFileName")
+    .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      success: true,
-      count: history.length,
-      data: history,
-    });
-  } catch (error) {
-    console.error(error);
+  return res.status(200).json({
+    success: true,
+    count: history.length,
+    data: history,
+  });
+});
 
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+export const getInterviewSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+
+  const session = await InterviewSession.findOne({
+    _id: sessionId,
+    user: req.user._id,
+  }).populate("resume", "originalFileName");
+
+  if (!session) {
+    throw new apiError("Interview session not found.", 404);
   }
-};
+
+  return res.status(200).json({
+    success: true,
+    data: session,
+  });
+});

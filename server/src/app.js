@@ -18,8 +18,8 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/resumes", resumeRoutes);
 // app.use("/api/v1/analysis", analysisRoutes);
-// app.use("/api/v1/interview", interviewRoutes);
-// app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/interviews", interviewRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 app.use(notFound);
 

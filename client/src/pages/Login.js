@@ -18,6 +18,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -39,6 +40,7 @@ const Login = () => {
       }
     } catch (error) {
       alert(error.response?.data?.message || "Login Failed");
+      setError(error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -159,6 +161,8 @@ const Login = () => {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
+
+            {error && <p className="text-gray-500 mt-3">{error.message}</p>}
 
             {/* Remember */}
 

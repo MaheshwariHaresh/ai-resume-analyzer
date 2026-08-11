@@ -1,6 +1,7 @@
 import axios from "../apis/axiosConfig";
 
 const BACKEND_URL = process.env.REACT_APP_API_URL;
+
 export const uploadResume = async (file) => {
   const formData = new FormData();
 
@@ -12,5 +13,21 @@ export const uploadResume = async (file) => {
     },
   });
 
+  return data;
+};
+
+export const getMyResumes = async () => {
+  const { data } = await axios.get(`${BACKEND_URL}/resumes`);
+  return data;
+};
+
+// get resume details by id
+export const getResumeDetails = async (id) => {
+  const { data } = await axios.get(`${BACKEND_URL}/resumes/${id}`);
+  return data;
+};
+
+export const deleteResume = async (id) => {
+  const { data } = await axios.delete(`${BACKEND_URL}/resumes/${id}`);
   return data;
 };
