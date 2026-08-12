@@ -1,6 +1,7 @@
 import { FileText, UploadCloud } from "lucide-react";
 import { useState } from "react";
-import { uploadResume } from "../../apis/resumeApi";
+import { analyzePublicResume } from "../../apis/resumeApi";
+import { useNavigate } from "react-router-dom";
 
 const UploadResumeCard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -8,6 +9,7 @@ const UploadResumeCard = () => {
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -16,14 +18,25 @@ const UploadResumeCard = () => {
 
     try {
       setLoading(true);
+      setError("");
 
-      const data = await uploadResume(selectedFile);
+      const response = await analyzePublicResume(selectedFile);
 
-      console.log(data);
+      console.log("Public Resume Analysis:", response);
 
-      // Next Step
+      sessionStorage.setItem(
+        "publicResumeAnalysis",
+        JSON.stringify(response.data.analysis),
+      );
+
+      navigate("/resume-analysis");
     } catch (error) {
-      console.log(error);
+      console.error("Resume Analysis Error:", error);
+
+      setError(
+        error.response?.data?.message ||
+          "Failed to analyze resume. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -158,7 +171,7 @@ const UploadResumeCard = () => {
             onClick={handleUpload}
           >
             <UploadCloud className="w-5 h-5" />
-            {loading ? "Uploading..." : "Analyze Resume"}
+            {loading ? "Analyzing Resume..." : "Analyze Resume"}
           </button>
         </div>
 

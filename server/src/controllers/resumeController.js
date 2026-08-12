@@ -4,6 +4,42 @@ import apiError from "../utils/apiError.js";
 import { uploadResumeToCloudinary } from "../services/cloudinaryService.js";
 import { analyzeResume } from "../services/geminiService.js";
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs/promises";
+
+/**
+ * @desc Public Resume Analysis
+ * @route POST /api/resumes/public-analyze
+ * @access Public
+ */
+export const publicAnalyzeResume = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new apiError("Please upload a resume.", 400);
+  }
+
+  try {
+    // Analyze resume using Gemini
+    const analysis = await analyzeResume(req.file.path, req.file.mimetype);
+
+    return res.status(200).json({
+      success: true,
+      message: "Resume analyzed successfully.",
+      data: {
+        analysis,
+      },
+    });
+  } catch (error) {
+    throw error;
+  } finally {
+    // Delete temporary uploaded file
+    if (req.file?.path) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (error) {
+        console.error("Temporary file deletion failed:", error);
+      }
+    }
+  }
+});
 
 /**
  * @desc Upload Resume
@@ -15,8 +51,6 @@ export const uploadResume = asyncHandler(async (req, res) => {
   if (!req.file) {
     throw new apiError("Please upload a resume.", 400);
   }
-
-  let analysis;
 
   try {
     // Upload to Cloudinary

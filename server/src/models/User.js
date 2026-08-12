@@ -37,6 +37,49 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // Profile Information
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    profession: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    experience: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    linkedin: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    github: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    portfolio: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   {
     timestamps: true,

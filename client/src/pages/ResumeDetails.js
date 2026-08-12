@@ -70,7 +70,7 @@ const ResumeDetails = () => {
           <p className="text-gray-500 mt-2">{error}</p>
 
           <button
-            onClick={() => navigate("/dashboard/resume-history")}
+            onClick={() => navigate("/dashboard/history")}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold"
           >
             Back to Resume History
@@ -136,7 +136,7 @@ const ResumeDetails = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div className="flex items-start gap-4">
           <button
-            onClick={() => navigate("/dashboard/resume-history")}
+            onClick={() => navigate("/dashboard/history")}
             className="p-2.5 rounded-xl border bg-white hover:bg-gray-50 transition"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />

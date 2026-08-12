@@ -1,11 +1,13 @@
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import GuestRoute from "./routes/GuestRoute";
 
+import PublicResumeResult from "./pages/PublicResumeResult";
 import Dashboard from "./pages/Dashboard";
 import ResumeHistory from "./pages/ResumeHistory";
 import InterviewCoach from "./pages/InterviewCoach";
@@ -26,6 +28,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/resume-analysis" element={<PublicResumeResult />} />
       </Route>
 
       {/* Dashboard */}

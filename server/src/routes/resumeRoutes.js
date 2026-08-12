@@ -8,23 +8,23 @@ import {
   getMyResumes,
   getResumeById,
   deleteResume,
+  publicAnalyzeResume,
 } from "../controllers/resumeController.js";
 
 const router = Router();
 
-// All routes require authentication
+// Upload Resume Public Publically
+router.post("/public-analyze", upload.single("resume"), publicAnalyzeResume);
+
+// Protected Routes
 router.use(authMiddleware);
 
-// Upload Resume
 router.post("/upload", upload.single("resume"), uploadResume);
 
-// Get Logged-in User's Resumes
 router.get("/", getMyResumes);
 
-// Get Resume by ID
 router.get("/:id", getResumeById);
 
-// Delete Resume
 router.delete("/:id", deleteResume);
 
 export default router;
