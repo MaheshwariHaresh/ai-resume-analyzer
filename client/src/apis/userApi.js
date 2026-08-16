@@ -10,7 +10,7 @@ export const getMyProfile = async () => {
 };
 
 // Update logged-in user's profile
-export const updateMyProfile = async (profileData) => {
+export const updateProfile = async (profileData) => {
   const { data } = await axios.put(`${BACKEND_URL}/users/profile`, profileData);
 
   return data;

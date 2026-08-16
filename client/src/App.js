@@ -18,6 +18,7 @@ import AnalyzeResume from "./pages/AnalyzeResume";
 import ResumeDetails from "./pages/ResumeDetails";
 import InterviewSession from "./pages/InterviewSession";
 import InterviewResult from "./pages/InterviewResult";
+import EditProfile from "./pages/EditProfile";
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
         <Route path="interview/:sessionId" element={<InterviewSession />} />
 
         <Route path="profile" element={<Profile />} />
+        <Route path="profile/edit" element={<EditProfile />} />
         <Route path="analyze" element={<AnalyzeResume />} />
         <Route path="resume/:id" element={<ResumeDetails />} />
         <Route

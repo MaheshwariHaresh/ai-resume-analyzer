@@ -58,21 +58,12 @@ export const getMyProfile = asyncHandler(async (req, res) => {
  * @access Private
  */
 export const updateMyProfile = asyncHandler(async (req, res) => {
-  const {
-    fullName,
-    phone,
-    profession,
-    location,
-    experience,
-    linkedin,
-    github,
-    portfolio,
-  } = req.body;
+  const { fullName, phone, profession, location, experience } = req.body;
 
   const user = await User.findById(req.user._id);
 
   if (!user) {
-    throw new apiError("User not found.", 404);
+    throw new apiError(404, "User not found.");
   }
 
   // Update only provided fields
@@ -81,16 +72,21 @@ export const updateMyProfile = asyncHandler(async (req, res) => {
   if (profession !== undefined) user.profession = profession;
   if (location !== undefined) user.location = location;
   if (experience !== undefined) user.experience = experience;
-  if (linkedin !== undefined) user.linkedin = linkedin;
-  if (github !== undefined) user.github = github;
-  if (portfolio !== undefined) user.portfolio = portfolio;
 
   await user.save();
 
   return res.status(200).json({
     success: true,
     message: "Profile updated successfully.",
-    data: user,
+    user: {
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      profession: user.profession,
+      location: user.location,
+      experience: user.experience,
+    },
   });
 });
 

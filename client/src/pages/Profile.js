@@ -4,32 +4,28 @@ import {
   Phone,
   Briefcase,
   MapPin,
-  Globe,
-  Save,
   BarChart3,
   FileText,
   Brain,
   Calendar,
   Lock,
   Trash2,
+  Pencil,
+  ExternalLink,
 } from "lucide-react";
 
-import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  getMyProfile,
-  updateMyProfile,
-  changePassword,
-  deleteAccount,
-} from "../apis/userApi";
-import Input from "../components/utils/Input";
+import { getMyProfile, changePassword, deleteAccount } from "../apis/userApi";
+
 import Stat from "../components/utils/Stat";
 import ChangePasswordModal from "../components/utils/ChangePasswordModal";
 import DeleteAccountModal from "../components/utils/DeleteAccountModal";
 
 const Profile = () => {
+  const navigate = useNavigate();
+
   const [profile, setProfile] = useState({
     fullName: "",
     email: "",
@@ -37,9 +33,6 @@ const Profile = () => {
     profession: "",
     location: "",
     experience: "",
-    linkedin: "",
-    github: "",
-    portfolio: "",
   });
 
   const [statistics, setStatistics] = useState({
@@ -49,28 +42,23 @@ const Profile = () => {
     memberSince: "",
   });
 
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  // Password Change states
+  // Password states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
-  // Delete Account States
+  // Delete account states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  // Fetch Profile
+
+  // Fetch profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -78,7 +66,6 @@ const Profile = () => {
         setError("");
 
         const response = await getMyProfile();
-
         const { user } = response.data;
 
         setProfile({
@@ -88,12 +75,8 @@ const Profile = () => {
           profession: user.profession || "",
           location: user.location || "",
           experience: user.experience || "",
-          linkedin: user.linkedin || "",
-          github: user.github || "",
-          portfolio: user.portfolio || "",
         });
 
-        // Statistics will be added when backend returns them.
         if (response.data.statistics) {
           setStatistics(response.data.statistics);
         }
@@ -109,19 +92,7 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  // Handle Input Changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setProfile((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    setSuccess("");
-    setError("");
-  };
-
+  // Change password
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -160,6 +131,7 @@ const Profile = () => {
     }
   };
 
+  // Delete account
   const handleDeleteAccount = async () => {
     try {
       setDeleteLoading(true);
@@ -167,10 +139,8 @@ const Profile = () => {
 
       await deleteAccount();
 
-      // Clear authentication
       localStorage.removeItem("token");
 
-      // Redirect to login
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Delete Account Error:", error);
@@ -182,231 +152,166 @@ const Profile = () => {
       setDeleteLoading(false);
     }
   };
-  // Save Profile
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      setError("");
-      setSuccess("");
 
-      const response = await updateMyProfile({
-        fullName: profile.fullName,
-        phone: profile.phone,
-        profession: profile.profession,
-        location: profile.location,
-        experience: profile.experience,
-        linkedin: profile.linkedin,
-        github: profile.github,
-        portfolio: profile.portfolio,
-      });
-
-      const user = response.data;
-
-      setProfile((prev) => ({
-        ...prev,
-        fullName: user.fullName || "",
-        email: user.email || prev.email,
-        phone: user.phone || "",
-        profession: user.profession || "",
-        location: user.location || "",
-        experience: user.experience || "",
-        linkedin: user.linkedin || "",
-        github: user.github || "",
-        portfolio: user.portfolio || "",
-      }));
-
-      setSuccess("Profile updated successfully.");
-    } catch (error) {
-      console.error("Update Profile Error:", error);
-
-      setError(error.response?.data?.message || "Failed to update profile.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // Loading
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <div className="text-gray-500">Loading profile...</div>
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+
+          <p className="text-sm text-gray-500">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
+  // Error
   if (error && !profile.email) {
     return (
-      <div className="bg-white border rounded-2xl p-8 text-center">
-        <p className="text-red-500">{error}</p>
+      <div className="bg-white border border-red-100 rounded-2xl p-8 text-center">
+        <p className="text-red-500 text-sm">{error}</p>
+
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
+  // Generate initials from full name
+  const initials = profile.fullName
+    ? profile.fullName
+        .split(" ")
+        .map((name) => name[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "U";
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Profile Hero */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 rounded-3xl p-7 md:p-9 text-white shadow-lg">
+        {/* Background Decoration */}
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+        <div className="absolute -bottom-32 -left-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
 
-        <p className="text-gray-500 mt-2">
-          Manage your profile, account settings and career information.
-        </p>
-      </div>
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-6">
+          {/* Avatar */}
+          <div className="w-24 h-24 shrink-0 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shadow-lg">
+            <span className="text-3xl font-bold text-white">{initials}</span>
+          </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left */}
+          {/* User Info */}
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-blue-100">Career Profile</p>
 
-        <div className="lg:col-span-2 bg-white rounded-2xl border shadow-sm p-8">
-          {/* Profile Image */}
+            <h2 className="mt-1 text-3xl font-bold truncate">
+              {profile.fullName || "User"}
+            </h2>
 
-          <div className="flex items-center gap-5 mb-8">
-            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
-              {profile.profileImage ? (
-                <img
-                  src={profile.profileImage}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={42} className="text-blue-600" />
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-blue-100">
+              {profile.profession && (
+                <span className="flex items-center gap-2">
+                  <Briefcase size={15} />
+                  {profile.profession}
+                </span>
+              )}
+
+              {profile.location && (
+                <span className="flex items-center gap-2">
+                  <MapPin size={15} />
+                  {profile.location}
+                </span>
               )}
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div>
-              <button
-                type="button"
-                className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Upload Photo
-              </button>
+      {/* Main Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Personal Information */}
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">
+              Personal Information
+            </h2>
 
-              <p className="text-sm text-gray-500 mt-2">JPG, PNG • Max 2MB</p>
-            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Your basic account and contact information.
+            </p>
           </div>
 
-          {/* Profile Fields */}
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <Input
+          <div className="p-6 grid sm:grid-cols-2 gap-5">
+            <InfoItem
               icon={<User size={18} />}
               label="Full Name"
-              name="fullName"
               value={profile.fullName}
-              onChange={handleChange}
-              placeholder="Full Name"
             />
 
-            <Input
+            <InfoItem
               icon={<Mail size={18} />}
-              label="Email"
-              name="email"
+              label="Email Address"
               value={profile.email}
-              placeholder="Email"
-              disabled
             />
 
-            <Input
+            <InfoItem
               icon={<Phone size={18} />}
               label="Phone"
-              name="phone"
               value={profile.phone}
-              onChange={handleChange}
-              placeholder="+92..."
             />
 
-            <Input
-              icon={<Briefcase size={18} />}
-              label="Profession"
-              name="profession"
-              value={profile.profession}
-              onChange={handleChange}
-              placeholder="Backend Developer"
-            />
-
-            <Input
+            <InfoItem
               icon={<MapPin size={18} />}
               label="Location"
-              name="location"
               value={profile.location}
-              onChange={handleChange}
-              placeholder="Karachi"
             />
 
-            <Input
+            <InfoItem
+              icon={<Briefcase size={18} />}
+              label="Profession"
+              value={profile.profession}
+            />
+
+            <InfoItem
               icon={<Briefcase size={18} />}
               label="Experience"
-              name="experience"
               value={profile.experience}
-              onChange={handleChange}
-              placeholder="Fresher"
-            />
-
-            <Input
-              icon={<FaLinkedin size={18} />}
-              label="LinkedIn"
-              name="linkedin"
-              value={profile.linkedin}
-              onChange={handleChange}
-              placeholder="https://linkedin.com/in/..."
-            />
-
-            <Input
-              icon={<FaGithub size={18} />}
-              label="GitHub"
-              name="github"
-              value={profile.github}
-              onChange={handleChange}
-              placeholder="https://github.com/..."
             />
           </div>
 
-          {/* Portfolio */}
-
-          <div className="mt-6">
-            <label className="font-medium mb-2 block">Portfolio Website</label>
-
-            <div className="flex items-center border rounded-xl px-4">
-              <Globe size={18} className="text-gray-500" />
-
-              <input
-                type="text"
-                name="portfolio"
-                value={profile.portfolio}
-                onChange={handleChange}
-                placeholder="https://portfolio.com"
-                className="w-full p-3 outline-none"
-              />
-            </div>
+          {/* Edit Profile */}
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/profile/edit")}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition"
+            >
+              <Pencil size={16} />
+              Edit Profile
+            </button>
           </div>
-
-          {/* Messages */}
-
-          {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
-
-          {success && <p className="mt-4 text-sm text-green-600">{success}</p>}
-
-          {/* Save */}
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-8 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-xl"
-          >
-            <Save size={18} />
-
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
         </div>
+        {/* Account Statistics */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">
+              Account Statistics
+            </h2>
 
-        {/* Right */}
+            <p className="text-sm text-gray-500 mt-1">
+              Your activity overview.
+            </p>
+          </div>
 
-        <div className="space-y-6">
-          {/* Statistics */}
-
-          <div className="bg-white rounded-2xl border shadow-sm p-6">
-            <h2 className="font-bold text-lg mb-5">Account Statistics</h2>
-
+          <div className="p-6">
             <Stat
               icon={<FileText size={18} />}
               title="Resume Analyses"
@@ -435,53 +340,95 @@ const Profile = () => {
               }
             />
           </div>
-
-          {/* Account Settings */}
-
-          <div className="bg-white rounded-2xl border shadow-sm p-6">
-            <h2 className="font-bold text-lg mb-5">Account Settings</h2>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowPasswordModal(true);
-                setPasswordError("");
-                setPasswordSuccess("");
-              }}
-              className="w-full flex items-center gap-3 border rounded-xl p-4 hover:bg-gray-50"
-            >
-              <Lock size={18} />
-              Change Password
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteError("");
-                setShowDeleteModal(true);
-              }}
-              className="w-full mt-4 flex items-center gap-3 border border-red-200 text-red-600 rounded-xl p-4 hover:bg-red-50"
-            >
-              <Trash2 size={18} />
-              Delete Account
-            </button>
-          </div>
-
-          {showPasswordModal && (
-            <ChangePasswordModal
-              currentPassword={currentPassword}
-              newPassword={newPassword}
-              setCurrentPassword={setCurrentPassword}
-              setNewPassword={setNewPassword}
-              onSubmit={handleChangePassword}
-              onClose={() => setShowPasswordModal(false)}
-              loading={passwordLoading}
-              error={passwordError}
-              success={passwordSuccess}
-            />
-          )}
         </div>
       </div>
+
+      {/* Account Settings */}
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Account Settings</h2>
+
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your account security and access.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-3">
+          {/* Change Password */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowPasswordModal(true);
+              setPasswordError("");
+              setPasswordSuccess("");
+            }}
+            className="w-full flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-200 hover:bg-blue-50/50 transition text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Lock size={18} />
+              </div>
+
+              <div>
+                <p className="font-semibold text-sm text-gray-900">
+                  Change Password
+                </p>
+
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Update your account password.
+                </p>
+              </div>
+            </div>
+
+            <ExternalLink size={17} className="text-gray-400" />
+          </button>
+
+          {/* Delete Account */}
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteError("");
+              setShowDeleteModal(true);
+            }}
+            className="w-full flex items-center justify-between gap-4 p-4 rounded-xl border border-red-100 hover:border-red-200 hover:bg-red-50 transition text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                <Trash2 size={18} />
+              </div>
+
+              <div>
+                <p className="font-semibold text-sm text-red-600">
+                  Delete Account
+                </p>
+
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Permanently delete your account and data.
+                </p>
+              </div>
+            </div>
+
+            <ExternalLink size={17} className="text-red-300" />
+          </button>
+        </div>
+      </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <ChangePasswordModal
+          currentPassword={currentPassword}
+          newPassword={newPassword}
+          setCurrentPassword={setCurrentPassword}
+          setNewPassword={setNewPassword}
+          onSubmit={handleChangePassword}
+          onClose={() => setShowPasswordModal(false)}
+          loading={passwordLoading}
+          error={passwordError}
+          success={passwordSuccess}
+        />
+      )}
+
+      {/* Delete Account Modal */}
       {showDeleteModal && (
         <DeleteAccountModal
           onDelete={handleDeleteAccount}
@@ -490,6 +437,30 @@ const Profile = () => {
           error={deleteError}
         />
       )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------
+   Info Item
+------------------------------------------------- */
+
+const InfoItem = ({ icon, label, value }) => {
+  return (
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100">
+      <div className="w-10 h-10 shrink-0 rounded-xl bg-white border border-gray-200 text-blue-600 flex items-center justify-center">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+          {label}
+        </p>
+
+        <p className="mt-1 text-sm font-semibold text-gray-900 break-words">
+          {value || "Not provided"}
+        </p>
+      </div>
     </div>
   );
 };

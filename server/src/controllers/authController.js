@@ -68,7 +68,7 @@ export const login = asyncHandler(async (req, res) => {
     throw new apiError(401, "Invalid email or password.");
   }
 
-  // Compare Password
+  // Compare password
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
@@ -83,7 +83,10 @@ export const login = asyncHandler(async (req, res) => {
       id: user._id,
       fullName: user.fullName,
       email: user.email,
-      role: user.role,
+      phone: user.phone,
+      profession: user.profession,
+      location: user.location,
+      experience: user.experience,
     },
   });
 });

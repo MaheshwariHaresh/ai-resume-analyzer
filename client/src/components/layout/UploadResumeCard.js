@@ -1,14 +1,19 @@
-import { FileText, UploadCloud } from "lucide-react";
+import {
+  FileText,
+  UploadCloud,
+  Sparkles,
+  ShieldCheck,
+  Lightbulb,
+} from "lucide-react";
 import { useState } from "react";
 import { analyzePublicResume } from "../../apis/resumeApi";
 import { useNavigate } from "react-router-dom";
 
 const UploadResumeCard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
   const handleUpload = async () => {
@@ -52,149 +57,282 @@ const UploadResumeCard = () => {
       file.type !==
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
-      return setError("Only PDF and DOCX files are allowed.");
+      setError("Only PDF and DOCX files are allowed.");
+      return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return setError("Maximum file size is 5MB.");
+      setError("Maximum file size is 5MB.");
+      return;
     }
 
     setError("");
-
     setSelectedFile(file);
   };
+
   return (
-    <section className="max-w-7xl mx-auto px-6 py-16">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Section */}
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Select Resume for Analysis
+    <section
+      id="upload-resume"
+      className="relative overflow-hidden bg-gray-50/70 py-16"
+    >
+      {/* Background Decoration */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] bg-blue-100/40 blur-3xl rounded-full pointer-events-none" />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold">
+            <Sparkles size={14} />
+            AI-Powered Resume Analysis
+          </div>
+
+          <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
+            See How Strong Your Resume Really Is
           </h2>
 
-          <p className="mt-3 text-gray-500 leading-7">
-            Upload your resume and receive an AI-powered ATS score, resume
-            feedback, skill gap analysis and interview questions.
+          <p className="mt-3 text-sm sm:text-base text-gray-500 leading-7">
+            Upload your resume and get an instant ATS score, AI-powered
+            feedback, missing skills, and personalized recommendations.
           </p>
-
-          {/* Upload Card */}
-          <label
-            htmlFor="resume"
-            className="mt-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl bg-white hover:border-blue-500 hover:bg-blue-50 transition cursor-pointer py-8 px-6"
-          >
-            {selectedFile ? (
-              <>
-                <FileText className="w-12 h-12 text-blue-600" />
-
-                <h3 className="mt-4 text-lg font-semibold text-center">
-                  {selectedFile.name}
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  {(selectedFile.size / 1024).toFixed(2)} KB
-                </p>
-
-                <p className="mt-4 text-blue-600 text-sm font-medium">
-                  Click to choose another file
-                </p>
-              </>
-            ) : (
-              <>
-                <UploadCloud className="w-10 h-10 text-gray-500" />
-
-                <h3 className="mt-4 text-lg font-semibold">
-                  Click to upload your resume
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  PDF or DOCX (Max 5MB)
-                </p>
-              </>
-            )}
-
-            <input
-              id="resume"
-              type="file"
-              accept=".pdf,.doc,.docx"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </label>
-          {error && (
-            <p className="mt-3 text-center text-red-500 text-sm">{error}</p>
-          )}
-
-          <p className="text-center text-gray-400 text-sm mt-5">
-            or try our sample resumes
-          </p>
-          {/* Sample Resume 1 */}
-          <div className="mt-6 border rounded-xl p-4 flex items-center justify-between hover:border-blue-500 cursor-pointer transition">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  Marketing Manager Resume
-                </h4>
-
-                <p className="text-sm text-gray-500">5+ years experience</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Sample Resume 2 */}
-          <div className="mt-4 border-2 border-blue-500 rounded-xl p-4 flex items-center justify-between cursor-pointer transition">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  Software Engineer Resume
-                </h4>
-
-                <p className="text-sm text-gray-500">8+ years experience</p>
-              </div>
-            </div>
-
-            <div className="w-7 h-7 rounded-full border-2 border-blue-600 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-            </div>
-          </div>
-
-          {/* Analyze Button */}
-          <button
-            className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2"
-            onClick={handleUpload}
-          >
-            <UploadCloud className="w-5 h-5" />
-            {loading ? "Analyzing Resume..." : "Analyze Resume"}
-          </button>
         </div>
 
-        {/* Right Section */}
-        <div className="lg:col-span-2">
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 min-h-[300px] flex flex-col items-center justify-center text-center p-10">
-            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm">
-              <FileText className="w-10 h-10 text-gray-500" />
+        {/* Main Content */}
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+          {/* Upload Card */}
+          <div className="lg:col-span-2">
+            <div className="h-full bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              {/* Card Header */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Upload Your Resume
+                  </h3>
+
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    PDF or DOCX • Maximum 5MB
+                  </p>
+                </div>
+              </div>
+
+              {/* Upload Area */}
+              <label
+                htmlFor="resume"
+                className={`mt-6 flex flex-col items-center justify-center min-h-[190px] px-5 rounded-xl border-2 border-dashed cursor-pointer transition ${
+                  selectedFile
+                    ? "border-blue-300 bg-blue-50/50"
+                    : "border-gray-200 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/40"
+                }`}
+              >
+                {selectedFile ? (
+                  <>
+                    <div className="w-12 h-12 rounded-xl bg-white border border-blue-100 shadow-sm flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+
+                    <h4 className="mt-3 text-sm font-semibold text-gray-900 text-center break-all max-w-full">
+                      {selectedFile.name}
+                    </h4>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      {(selectedFile.size / 1024).toFixed(2)} KB
+                    </p>
+
+                    <span className="mt-3 text-xs font-semibold text-blue-600">
+                      Choose another file
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center">
+                      <UploadCloud className="w-6 h-6 text-blue-600" />
+                    </div>
+
+                    <h4 className="mt-3 text-sm font-semibold text-gray-900">
+                      Click to upload your resume
+                    </h4>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Drag & drop or browse your files
+                    </p>
+                  </>
+                )}
+
+                <input
+                  id="resume"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </label>
+
+              {/* Error */}
+              {error && (
+                <p className="mt-3 text-center text-xs font-medium text-red-500">
+                  {error}
+                </p>
+              )}
+
+              {/* Samples */}
+              <div className="mt-5">
+                <p className="text-center text-xs text-gray-400">
+                  Or try a sample resume
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <SampleResume
+                    title="Marketing Manager"
+                    experience="5+ years"
+                  />
+
+                  <SampleResume
+                    title="Software Engineer"
+                    experience="8+ years"
+                  />
+                </div>
+              </div>
+
+              {/* Analyze Button */}
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={loading}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition shadow-sm shadow-blue-600/20"
+              >
+                <UploadCloud size={17} />
+
+                {loading ? "Analyzing Resume..." : "Analyze Resume"}
+              </button>
+
+              {/* Security Note */}
+              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gray-400">
+                <ShieldCheck size={14} />
+                Your resume is securely processed
+              </div>
             </div>
+          </div>
 
-            <h3 className="mt-8 text-3xl font-bold text-gray-900">
-              Ready to see the magic?
-            </h3>
+          {/* Analysis Process Preview */}
+          <div className="lg:col-span-3">
+            <div className="relative h-full min-h-[420px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
+              {/* Background Decoration */}
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-50 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-indigo-50 rounded-full blur-3xl pointer-events-none" />
 
-            <p className="mt-4 max-w-xl text-gray-500 leading-7">
-              Upload your resume and click <strong>Analyze Resume</strong> to
-              receive an ATS score, AI feedback, missing skills, and interview
-              questions in seconds.
-            </p>
+              <div className="relative">
+                {/* Header */}
+                <div className="max-w-xl">
+                  <span className="text-xs font-semibold tracking-wider text-blue-600 uppercase">
+                    Simple & Intelligent
+                  </span>
+
+                  <h3 className="mt-2 text-2xl font-bold text-gray-900">
+                    From resume to actionable insights.
+                  </h3>
+
+                  <p className="mt-3 text-sm text-gray-500 leading-6">
+                    Upload your resume and let our AI evaluate it through
+                    multiple stages to give you practical recommendations.
+                  </p>
+                </div>
+
+                {/* Process Steps */}
+                <div className="mt-8 space-y-4">
+                  <ProcessStep
+                    number="01"
+                    title="Upload your resume"
+                    description="Upload your PDF or DOCX resume securely."
+                    icon={<UploadCloud size={19} />}
+                  />
+
+                  <ProcessStep
+                    number="02"
+                    title="AI analyzes your resume"
+                    description="Our AI evaluates structure, skills, experience and keywords."
+                    icon={<Sparkles size={19} />}
+                  />
+
+                  <ProcessStep
+                    number="03"
+                    title="Get personalized insights"
+                    description="Receive actionable recommendations to improve your resume."
+                    icon={<Lightbulb size={19} />}
+                  />
+                </div>
+
+                {/* Security Note */}
+                <div className="mt-7 flex items-center gap-3 rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+                  <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                    <ShieldCheck size={18} className="text-green-600" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Your resume stays private
+                    </p>
+
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Securely processed for analysis.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+  );
+};
+
+/* Sample Resume */
+
+const SampleResume = ({ title, experience }) => {
+  return (
+    <button
+      type="button"
+      className="text-left border border-gray-200 rounded-xl p-3 hover:border-blue-300 hover:bg-blue-50/40 transition"
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+          <FileText className="w-4 h-4 text-blue-600" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-900 truncate">
+            {title}
+          </p>
+
+          <p className="text-[11px] text-gray-500 mt-0.5">{experience}</p>
+        </div>
+      </div>
+    </button>
+  );
+};
+
+/* Analysis Process Step */
+
+const ProcessStep = ({ number, title, description, icon }) => {
+  return (
+    <div className="group flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50/70 p-4 hover:border-blue-100 hover:bg-blue-50/40 transition">
+      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-gray-200 text-xs font-bold text-gray-400 shrink-0">
+        {number}
+      </div>
+
+      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+
+        <p className="mt-1 text-xs text-gray-500 leading-5">{description}</p>
+      </div>
+    </div>
   );
 };
 

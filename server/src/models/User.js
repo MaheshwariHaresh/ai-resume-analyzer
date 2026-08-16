@@ -22,17 +22,6 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
-    role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-    },
-
-    profileImage: {
-      type: String,
-      default: "",
-    },
-
     isVerified: {
       type: Boolean,
       default: false,
@@ -58,24 +47,6 @@ const userSchema = new mongoose.Schema(
     },
 
     experience: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
-    linkedin: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
-    github: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
-    portfolio: {
       type: String,
       default: "",
       trim: true,

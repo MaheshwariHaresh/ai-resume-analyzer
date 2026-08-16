@@ -17,11 +17,11 @@ import {
 
 const Register = () => {
   const { login } = useAuth();
-
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -36,26 +36,32 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    if (error) {
+      setError("");
+    }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.fullName || !formData.email || !formData.password) {
-      return alert("Please fill all fields.");
-    }
-
-    if (!agree) {
-      return alert("Please accept Terms & Conditions.");
+    // Prevent invalid submission
+    if (
+      !formData.fullName.trim() ||
+      !formData.email.trim() ||
+      !formData.password.trim() ||
+      !agree
+    ) {
+      return;
     }
 
     try {
       setLoading(true);
+      setError("");
 
       const payload = {
-        fullName: formData.fullName,
-        email: formData.email,
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
         password: formData.password,
       };
 
@@ -66,17 +72,31 @@ const Register = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Registration Failed");
+      console.error("Registration Error:", error);
+
+      setError(
+        error.response?.data?.message ||
+          "Unable to create your account. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // Basic email validation
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+
+  const isFormValid =
+    formData.fullName.trim() &&
+    formData.email.trim() &&
+    isValidEmail &&
+    formData.password.trim() &&
+    agree;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100 flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden grid lg:grid-cols-2">
         {/* Left Side */}
-
         <div className="hidden lg:flex flex-col justify-center bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-16">
           <div>
             <h1 className="text-5xl font-bold leading-tight">
@@ -110,7 +130,6 @@ const Register = () => {
         </div>
 
         {/* Right Side */}
-
         <div className="p-8 md:p-14 flex items-center">
           <form onSubmit={handleSubmit} className="w-full">
             <h2 className="text-4xl font-bold text-gray-800">
@@ -122,24 +141,24 @@ const Register = () => {
             </p>
 
             {/* Google */}
-
-            <button className="w-full mt-8 flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 hover:bg-gray-50 transition">
+            <button
+              type="button"
+              className="w-full mt-8 flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 hover:bg-gray-50 transition"
+            >
               <FaGoogle className="text-red-500 text-lg" />
               Continue with Google
             </button>
 
             {/* Divider */}
-
             <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-300"></div>
+              <div className="flex-1 h-px bg-gray-300" />
 
               <span className="text-gray-400 text-sm">OR</span>
 
-              <div className="flex-1 h-px bg-gray-300"></div>
+              <div className="flex-1 h-px bg-gray-300" />
             </div>
 
             {/* Full Name */}
-
             <label className="block mb-2 font-medium text-gray-700">
               Full Name
             </label>
@@ -153,12 +172,12 @@ const Register = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="Enter your full name"
+                autoComplete="name"
                 className="w-full border rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Email */}
-
             <label className="block mt-5 mb-2 font-medium text-gray-700">
               Email Address
             </label>
@@ -172,12 +191,12 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
+                autoComplete="email"
                 className="w-full border rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Password */}
-
             <label className="block mt-5 mb-2 font-medium text-gray-700">
               Password
             </label>
@@ -191,12 +210,13 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Create password"
+                autoComplete="new-password"
                 className="w-full border rounded-xl py-3 pl-12 pr-12 outline-none focus:ring-2 focus:ring-blue-500"
               />
 
               <button
                 type="button"
-                className="absolute right-4 top-4 text-gray-500"
+                className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -204,29 +224,40 @@ const Register = () => {
             </div>
 
             {/* Terms */}
-
-            <label className="flex items-start gap-3 mt-5 text-gray-600 text-sm">
+            <label className="flex items-start gap-3 mt-5 text-gray-600 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
-                className="mt-1"
+                onChange={(e) => {
+                  setAgree(e.target.checked);
+
+                  if (error) {
+                    setError("");
+                  }
+                }}
+                className="mt-1 cursor-pointer"
               />
-              I agree to the Terms of Service and Privacy Policy.
+
+              <span>I agree to the Terms of Service and Privacy Policy.</span>
             </label>
 
-            {/* Register */}
+            {/* Error */}
+            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
+            {/* Register */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl py-3 font-semibold mt-8 transition"
+              disabled={!isFormValid || loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-semibold mt-8 transition flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                "Create Account"
+              )}
             </button>
 
             {/* Login */}
-
             <p className="text-center mt-8 text-gray-600">
               Already have an account?
               <Link

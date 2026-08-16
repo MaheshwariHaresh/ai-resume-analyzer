@@ -5,14 +5,19 @@ import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="h-screen flex overflow-hidden bg-gray-100">
+      {/* Sidebar */}
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
-      <div className="flex-1 flex flex-col">
+      {/* Main Area */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* Topbar */}
         <Topbar />
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-y-auto p-3">
           <Outlet />
         </main>
       </div>
