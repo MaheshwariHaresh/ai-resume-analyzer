@@ -125,7 +125,7 @@ const InterviewCoach = () => {
       const session = response.data;
 
       // Navigate to actual interview session page
-      navigate(`/dashboard/interview/${session._id}`);
+      navigate(`/dashboard/interview/session/${session._id}`);
     } catch (error) {
       console.error("Start Interview Error:", error);
 
@@ -439,7 +439,7 @@ const InterviewCoach = () => {
                   ) : (
                     <button
                       onClick={() =>
-                        navigate(`/dashboard/interview/${session._id}`)
+                        navigate(`/dashboard/interview/session/${session._id}`)
                       }
                       className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
                     >

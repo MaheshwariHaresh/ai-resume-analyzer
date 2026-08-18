@@ -31,13 +31,13 @@ Return exactly this JSON:
   "summary": "",
 
   "sectionScores": {
-    "contactInfo":0,
-    "experience":0,
-    "skills":0,
-    "education":0,
-    "projects":0,
-    "keywords":0,
-    "formatting":0
+    "contactInfo": 0,
+    "experience": 0,
+    "skills": 0,
+    "education": 0,
+    "projects": 0,
+    "keywords": 0,
+    "formatting": 0
   },
 
   "strengths": [],
@@ -67,7 +67,7 @@ Poor
 
 Summary should contain 4-5 lines.
 
-Generate minimum
+Generate minimum:
 
 5 strengths
 
@@ -82,35 +82,76 @@ Generate minimum
 Return JSON only.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: [
-        {
-          inlineData: {
-            mimeType,
-            data: file.toString("base64"),
-          },
-        },
-        {
-          text: prompt,
-        },
-      ],
-    });
+    const maxAttempts = 3;
 
-    let text = response.text.trim();
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-3.6-flash",
+          contents: [
+            {
+              inlineData: {
+                mimeType,
+                data: file.toString("base64"),
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        });
 
-    text = text.replace(/```json/g, "");
-    text = text.replace(/```/g, "");
-    text = text.trim();
+        let text = response.text.trim();
 
-    return JSON.parse(text);
+        text = text.replace(/```json/g, "");
+        text = text.replace(/```/g, "");
+        text = text.trim();
+
+        return JSON.parse(text);
+      } catch (error) {
+        console.error(
+          `Gemini analysis attempt ${attempt}/${maxAttempts} failed:`,
+          error,
+        );
+
+        const isTemporaryError =
+          error?.status === 503 ||
+          error?.error?.code === 503 ||
+          error?.error?.status === "UNAVAILABLE";
+
+        // Retry only temporary Gemini availability errors
+        if (isTemporaryError && attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          continue;
+        }
+
+        throw error;
+      }
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Resume analysis failed:", error);
+
+    if (
+      error?.status === 503 ||
+      error?.error?.code === 503 ||
+      error?.error?.status === "UNAVAILABLE"
+    ) {
+      throw new apiError(
+        "Resume analysis service is temporarily unavailable. Please try again in a moment.",
+        503,
+      );
+    }
+
+    if (error instanceof SyntaxError) {
+      throw new apiError(
+        "The AI returned an invalid analysis response. Please try again.",
+        500,
+      );
+    }
 
     throw new apiError("Failed to analyze resume.", 500);
   }
 };
-
 // Generate Interview Questions
 export const generateInterviewQuestions = async (
   resume,

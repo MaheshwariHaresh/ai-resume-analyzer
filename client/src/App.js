@@ -48,6 +48,10 @@ function App() {
 
         <Route path="interview" element={<InterviewCoach />} />
         <Route path="interview/:sessionId" element={<InterviewSession />} />
+        <Route
+          path="interview/session/:sessionId"
+          element={<InterviewSession />}
+        />
 
         <Route path="profile" element={<Profile />} />
         <Route path="profile/edit" element={<EditProfile />} />

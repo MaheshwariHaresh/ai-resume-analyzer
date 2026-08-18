@@ -5,17 +5,30 @@ import {
   Trash2,
   Calendar,
   TrendingUp,
+  X,
 } from "lucide-react";
+
 import { getMyResumes, deleteResume } from "../apis/resumeApi";
-import { useNavigate } from "react-router-dom";
+
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { useEffect, useMemo, useState } from "react";
 
 const ResumeHistory = () => {
   const navigate = useNavigate();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+  }, [searchParams]);
 
   useEffect(() => {
     fetchResumes();
@@ -27,7 +40,7 @@ const ResumeHistory = () => {
 
       const res = await getMyResumes();
 
-      setResumes(res.data);
+      setResumes(res.data || []);
     } catch (error) {
       console.log(error);
     } finally {
@@ -35,11 +48,41 @@ const ResumeHistory = () => {
     }
   };
 
+  // Search + Status Filter
   const filteredResumes = useMemo(() => {
-    return resumes.filter((resume) =>
-      resume.originalFileName.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [resumes, search]);
+    return resumes.filter((resume) => {
+      const fileName = resume.originalFileName?.toLowerCase() || "";
+
+      const searchValue = search.toLowerCase().trim();
+
+      const matchesSearch = fileName.includes(searchValue);
+
+      const matchesStatus =
+        statusFilter === "All" ||
+        resume.uploadStatus?.toLowerCase() === statusFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [resumes, search, statusFilter]);
+
+  // Search from History page
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+
+    setSearch(value);
+
+    const params = new URLSearchParams(searchParams);
+
+    if (value.trim()) {
+      params.set("search", value);
+    } else {
+      params.delete("search");
+    }
+
+    setSearchParams(params, {
+      replace: true,
+    });
+  };
 
   // DELETE RESUME
   const handleDelete = async (id) => {
@@ -56,6 +99,23 @@ const ResumeHistory = () => {
     }
   };
 
+  // Clear Filters
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("All");
+
+    const params = new URLSearchParams(searchParams);
+
+    params.delete("search");
+
+    setSearchParams(params, {
+      replace: true,
+    });
+  };
+
+  const hasFilters = search.trim() !== "" || statusFilter !== "All";
+
+  // Average ATS Score
   const averageScore =
     resumes.length > 0
       ? Math.round(
@@ -66,172 +126,309 @@ const ResumeHistory = () => {
         )
       : 0;
 
+  // Highest ATS Score
   const highestScore =
     resumes.length > 0
       ? Math.max(...resumes.map((resume) => resume.analysis?.atsScore || 0))
       : 0;
+
   return (
     <div className="space-y-8">
       {/* Header */}
+      <div className="relative overflow-hidden bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+        <div className="absolute -top-20 -right-20 w-48 h-48 bg-blue-50 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Resume History</h1>
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          {/* Title */}
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+              <FileText size={22} className="text-blue-600" />
+            </div>
 
-          <p className="text-gray-500 mt-2">
-            View and manage all your analyzed resumes.
-          </p>
+            <div>
+              <p className="text-sm font-medium text-blue-600 mb-1">
+                Your Resumes
+              </p>
+
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Resume History
+              </h1>
+
+              <p className="text-sm text-gray-500 mt-1.5">
+                Review your previous resume analyses and track your progress.
+              </p>
+            </div>
+          </div>
+
+          {/* Action */}
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/analyze")}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-sm hover:shadow-md transition shrink-0"
+          >
+            <FileText size={17} />
+            Analyze New Resume
+          </button>
         </div>
-
-        <button
-          onClick={() => navigate("/dashboard/analyze")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold"
-        >
-          + Analyze New Resume
-        </button>
       </div>
 
       {/* Search & Filter */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            />
 
-      <div className="bg-white rounded-2xl border p-5 shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search
-            size={18}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+            <input
+              type="text"
+              placeholder="Search resume..."
+              value={search}
+              onChange={handleSearchChange}
+              className="w-full border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+            />
+          </div>
 
-          <input
-            type="text"
-            placeholder="Search resume..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border rounded-xl py-3 pl-11 pr-4 outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {/* Status */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="md:w-48 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-white cursor-pointer transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+          >
+            <option value="All">All Status</option>
+
+            <option value="Completed">Completed</option>
+
+            <option value="Pending">Pending</option>
+          </select>
+
+          {/* Clear */}
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition"
+            >
+              <X size={16} />
+              Clear
+            </button>
+          )}
         </div>
 
-        <select className="border rounded-xl px-4 py-3 outline-none">
-          <option>All Status</option>
+        {/* Filter Result */}
+        {hasFilters && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              Showing{" "}
+              <span className="font-semibold text-gray-700">
+                {filteredResumes.length}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-gray-700">
+                {resumes.length}
+              </span>{" "}
+              resumes
+            </p>
 
-          <option>Completed</option>
-
-          <option>Pending</option>
-        </select>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              Reset filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="bg-white rounded-2xl p-20 text-center">Loading...</div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-20 text-center">
+          <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto" />
+
+          <p className="text-sm text-gray-500 mt-4">Loading your resumes...</p>
+        </div>
+      ) : filteredResumes.length === 0 ? (
+        /* Empty State */
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+            <FileText size={24} className="text-gray-400" />
+          </div>
+
+          <h3 className="mt-4 text-base font-semibold text-gray-900">
+            {hasFilters ? "No resumes found" : "No resumes yet"}
+          </h3>
+
+          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+            {hasFilters
+              ? "Try changing your search or status filter."
+              : "Upload your first resume to start analyzing and tracking your progress."}
+          </p>
+
+          {hasFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-5 inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+            >
+              Clear Filters
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/analyze")}
+              className="mt-5 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+            >
+              <FileText size={17} />
+              Analyze Resume
+            </button>
+          )}
+        </div>
       ) : (
-        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-6 py-4">Resume</th>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Resume
+                  </th>
 
-                <th className="text-left px-6 py-4">ATS Score</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    ATS Score
+                  </th>
 
-                <th className="text-left px-6 py-4">Status</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Status
+                  </th>
 
-                <th className="text-left px-6 py-4">Date</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Date
+                  </th>
 
-                <th className="text-center px-6 py-4">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredResumes.map((resume) => (
-                <tr
-                  key={resume.id}
-                  className="border-t hover:bg-gray-50 transition"
-                >
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                        <FileText className="text-blue-600" />
-                      </div>
-
-                      <div>
-                        <h3 className="font-semibold">
-                          {resume.originalFileName}
-                        </h3>
-
-                        <p className="text-sm text-gray-500">Resume Document</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp size={18} className="text-green-600" />
-
-                      <span className="font-bold text-green-600">
-                        {resume.analysis?.atsScore || 0}%
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-5">
-                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-                      {resume.uploadStatus}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Calendar size={16} />
-
-                      {new Date(resume.createdAt).toLocaleDateString()}
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-5">
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={() =>
-                          navigate(`/dashboard/resume/${resume._id}`)
-                        }
-                        className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600"
-                      >
-                        <Eye size={18} />
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(resume._id)}
-                        className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+                  <th className="text-center px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {filteredResumes.map((resume) => (
+                  <tr
+                    key={resume._id}
+                    className="border-t border-gray-100 hover:bg-gray-50/70 transition"
+                  >
+                    {/* Resume */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                          <FileText className="text-blue-600" size={21} />
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate max-w-[280px]">
+                            {resume.originalFileName}
+                          </h3>
+
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            Resume Document
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* ATS */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={18} className="text-green-600" />
+
+                        <span className="font-bold text-green-600">
+                          {resume.analysis?.atsScore || 0}%
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          resume.uploadStatus?.toLowerCase() === "completed"
+                            ? "bg-green-100 text-green-700"
+                            : resume.uploadStatus?.toLowerCase() === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {resume.uploadStatus || "Unknown"}
+                      </span>
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <Calendar size={16} />
+
+                        {new Date(resume.createdAt).toLocaleDateString()}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/dashboard/resume/${resume._id}`)
+                          }
+                          title="View resume"
+                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
+                        >
+                          <Eye size={18} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(resume._id)}
+                          title="Delete resume"
+                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Summary Cards */}
-
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Total Resumes */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
-          <h3 className="text-gray-500">Total Resumes</h3>
+        {/* Total */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm text-gray-500">Total Resumes</h3>
 
-          <p className="text-3xl font-bold mt-2">{resumes.length}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">
+            {resumes.length}
+          </p>
         </div>
 
-        {/* Average ATS Score */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
-          <h3 className="text-gray-500">Average ATS Score</h3>
+        {/* Average */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm text-gray-500">Average ATS Score</h3>
 
           <p className="text-3xl font-bold text-green-600 mt-2">
             {averageScore}%
           </p>
         </div>
 
-        {/* Highest Score */}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
-          <h3 className="text-gray-500">Highest Score</h3>
+        {/* Highest */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm text-gray-500">Highest Score</h3>
 
           <p className="text-3xl font-bold text-blue-600 mt-2">
             {highestScore}%

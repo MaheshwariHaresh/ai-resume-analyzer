@@ -1,8 +1,28 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import {
+  persistInterviewState,
+  readStoredInterviewState,
+} from "./context/InterviewContext";
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+describe("interview state persistence", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  test("restores an active interview from sessionStorage", () => {
+    sessionStorage.setItem(
+      "interviewActive",
+      JSON.stringify({ active: true, sessionId: "session-123" }),
+    );
+
+    expect(readStoredInterviewState()).toEqual({
+      active: true,
+      sessionId: "session-123",
+    });
+  });
+
+  test("removes the stored interview state when the interview is cleared", () => {
+    persistInterviewState({ active: false, sessionId: null });
+
+    expect(sessionStorage.getItem("interviewActive")).toBeNull();
+  });
 });

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   LayoutDashboard,
@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FileText,
 } from "lucide-react";
+import { useInterview } from "../../context/InterviewContext";
 
 const menuItems = [
   {
@@ -28,6 +29,56 @@ const menuItems = [
 ];
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { interviewState, clearInterview } = useInterview();
+
+  const isInterviewActive = Boolean(interviewState.active);
+  const currentSessionId = interviewState.sessionId;
+
+  const isInterviewSessionRoute =
+    location.pathname.startsWith("/dashboard/interview/") &&
+    !location.pathname.includes("/result/");
+
+  const isCurrentInterviewSession =
+    isInterviewSessionRoute &&
+    currentSessionId &&
+    location.pathname.endsWith(`/${currentSessionId}`);
+
+  const handleNavigation = (path) => {
+    if (!isInterviewActive) {
+      navigate(path);
+      return;
+    }
+
+    if (!isCurrentInterviewSession) {
+      navigate(path);
+      return;
+    }
+
+    const confirmLeave = window.confirm(
+      "Your interview is still in progress. Are you sure you want to leave? Your saved answers will be preserved and you can continue the interview later.",
+    );
+
+    if (!confirmLeave) {
+      return;
+    }
+
+    clearInterview();
+    navigate(path);
+  };
+
+  /*
+   * Check active menu item.
+   */
+  const isMenuItemActive = (path) => {
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
+
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <aside
       className={`relative h-screen shrink-0 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
@@ -35,6 +86,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       }`}
     >
       {/* Collapse Button */}
+
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}
@@ -45,6 +97,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       </button>
 
       {/* Logo */}
+
       <div
         className={`border-b border-gray-100 ${
           collapsed ? "px-3 py-6" : "px-6 py-7"
@@ -55,12 +108,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             collapsed ? "justify-center" : "gap-3"
           }`}
         >
-          {/* Logo Icon */}
           <div className="w-11 h-11 shrink-0 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
             <FileText className="text-white" size={22} />
           </div>
 
-          {/* Logo Text */}
           {!collapsed && (
             <div>
               <h1 className="text-xl font-bold text-gray-900 leading-none">
@@ -74,27 +125,28 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       </div>
 
       {/* Analyze Resume CTA */}
+
       <div className={collapsed ? "px-3 py-5" : "px-4 py-5"}>
-        <NavLink
-          to="/dashboard/analyze"
-          className={({ isActive }) =>
-            `flex items-center ${
-              collapsed ? "justify-center" : "justify-center gap-2"
-            } w-full rounded-xl py-3 font-semibold text-sm transition-all duration-200 ${
-              isActive
-                ? "bg-blue-700 text-white shadow-md shadow-blue-600/20"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
-            }`
-          }
+        <button
+          type="button"
+          onClick={() => handleNavigation("/dashboard/analyze")}
+          className={`flex items-center ${
+            collapsed ? "justify-center" : "justify-center gap-2"
+          } w-full rounded-xl py-3 font-semibold text-sm transition-all duration-200 ${
+            location.pathname === "/dashboard/analyze"
+              ? "bg-blue-700 text-white shadow-md shadow-blue-600/20"
+              : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+          }`}
           title={collapsed ? "Analyze Resume" : undefined}
         >
           <Sparkles size={18} />
 
           {!collapsed && <span>Analyze Resume</span>}
-        </NavLink>
+        </button>
       </div>
 
       {/* Navigation */}
+
       <nav className="flex-1 px-3">
         {!collapsed && (
           <p className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
@@ -106,44 +158,39 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           {menuItems.map((item) => {
             const Icon = item.icon;
 
+            const isActive = isMenuItemActive(item.path);
+
             return (
               <li key={item.name}>
-                <NavLink
-                  to={item.path}
-                  end={item.path === "/dashboard"}
+                <button
+                  type="button"
+                  onClick={() => handleNavigation(item.path)}
                   title={collapsed ? item.name : undefined}
-                  className={({ isActive }) =>
-                    `group relative flex items-center ${
-                      collapsed ? "justify-center" : "gap-3"
-                    } px-3.5 py-3 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? "bg-blue-50 text-blue-600 font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`
-                  }
+                  className={`w-full group relative flex items-center ${
+                    collapsed ? "justify-center" : "gap-3"
+                  } px-3.5 py-3 rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? "bg-blue-50 text-blue-600 font-semibold"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
                 >
-                  {({ isActive }) => (
-                    <>
-                      {/* Active Indicator */}
-                      {isActive && !collapsed && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-blue-600" />
-                      )}
+                  {/* Active Indicator */}
 
-                      <Icon
-                        size={20}
-                        className={`shrink-0 transition ${
-                          isActive
-                            ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-gray-600"
-                        }`}
-                      />
-
-                      {!collapsed && (
-                        <span className="text-sm">{item.name}</span>
-                      )}
-                    </>
+                  {isActive && !collapsed && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-blue-600" />
                   )}
-                </NavLink>
+
+                  <Icon
+                    size={20}
+                    className={`shrink-0 transition ${
+                      isActive
+                        ? "text-blue-600"
+                        : "text-gray-400 group-hover:text-gray-600"
+                    }`}
+                  />
+
+                  {!collapsed && <span className="text-sm">{item.name}</span>}
+                </button>
               </li>
             );
           })}
@@ -151,6 +198,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       </nav>
 
       {/* Average ATS Score */}
+
       {!collapsed && (
         <div className="mx-4 mb-5 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 p-5 text-white shadow-md shadow-blue-600/10">
           <div className="flex items-start justify-between">
@@ -168,6 +216,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           </div>
 
           {/* Progress */}
+
           <div className="mt-4">
             <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
               <div className="w-[84%] h-full rounded-full bg-white" />

@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 import { Bell, Search, ChevronDown, User, LogOut } from "lucide-react";
 
 const Topbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, logout } = useAuth();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const profileRef = useRef(null);
+
+  // Read search query when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get("search") || "";
+
+    setSearch(query);
+  }, [location.search]);
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -29,16 +40,33 @@ const Topbar = () => {
 
   const handleLogout = () => {
     setIsProfileOpen(false);
+
     logout();
+
     navigate("/login");
+  };
+
+  // Search resumes
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const query = search.trim();
+
+    if (!query) {
+      navigate("/dashboard/history");
+      return;
+    }
+
+    navigate(`/dashboard/history?search=${encodeURIComponent(query)}`);
   };
 
   const userName = user?.fullName || "User";
   const userRole = user?.profession || "Career Seeker";
 
-  // Generate initials from user's name
+  // Generate initials
   const initials = userName
     .split(" ")
+    .filter(Boolean)
     .map((name) => name[0])
     .join("")
     .slice(0, 2)
@@ -46,19 +74,22 @@ const Topbar = () => {
 
   return (
     <header className="relative z-50 h-20 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between">
-      {/* Left - Search */}
-      <div className="relative w-full max-w-md">
+      {/* Search */}
+      <form onSubmit={handleSearch} className="relative w-full max-w-md">
         <Search
           size={18}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
         />
 
         <input
           type="text"
-          placeholder="Search your resumes, reports..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search your resumes..."
+          aria-label="Search your resumes"
           className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 pl-11 pr-4 text-sm text-gray-700 placeholder:text-gray-400 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
         />
-      </div>
+      </form>
 
       {/* Right */}
       <div className="flex items-center gap-4 ml-6">
@@ -70,7 +101,6 @@ const Topbar = () => {
         >
           <Bell size={19} />
 
-          {/* Notification Dot */}
           <span className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
         </button>
 
@@ -136,7 +166,6 @@ const Topbar = () => {
 
               {/* Menu Items */}
               <div className="p-2">
-                {/* Profile */}
                 <Link
                   to="/dashboard/profile"
                   onClick={() => setIsProfileOpen(false)}

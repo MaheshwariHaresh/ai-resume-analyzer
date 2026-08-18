@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "../components/dashboard/Sidebar";
 import Topbar from "../components/dashboard/Topbar";
+import DashboardFooter from "../components/dashboard/DashboardFooter";
 import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
@@ -12,14 +13,18 @@ const DashboardLayout = () => {
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
       {/* Main Area */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
         {/* Topbar */}
         <Topbar />
 
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-3">
-          <Outlet />
-        </main>
+        {/* Scrollable Area */}
+        <div className="flex-1 overflow-y-auto">
+          <main className="p-3">
+            <Outlet />
+          </main>
+
+          <DashboardFooter />
+        </div>
       </div>
     </div>
   );

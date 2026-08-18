@@ -133,39 +133,59 @@ const ResumeDetails = () => {
     <div className="space-y-8">
       {/* Header */}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-        <div className="flex items-start gap-4">
-          <button
-            onClick={() => navigate("/dashboard/history")}
-            className="p-2.5 rounded-xl border bg-white hover:bg-gray-50 transition"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
+      {/* Header */}
+      <div className="relative overflow-hidden bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+        {/* Background Decoration */}
+        <div className="absolute -top-20 -right-20 w-48 h-48 bg-blue-50 rounded-full blur-3xl" />
 
-          <div>
-            <div className="flex items-center gap-3">
-              <FileText className="w-7 h-7 text-blue-600" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          {/* Title */}
+          <div className="flex items-start gap-4">
+            {/* Back Button */}
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/history")}
+              className="w-11 h-11 shrink-0 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition"
+              aria-label="Back to resume history"
+            >
+              <ArrowLeft size={19} />
+            </button>
 
-              <h1 className="text-3xl font-bold text-gray-900">
-                Resume Report
-              </h1>
+            {/* Icon + Info */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                <FileText size={22} className="text-blue-600" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-blue-600 mb-1">
+                  Resume Analysis
+                </p>
+
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  Resume Report
+                </h1>
+
+                <p className="text-sm text-gray-500 mt-1.5 truncate max-w-xl">
+                  {resume.originalFileName}
+                </p>
+              </div>
             </div>
-
-            <p className="text-gray-500 mt-2">{resume.originalFileName}</p>
           </div>
-        </div>
 
-        {resume.fileUrl && (
-          <a
-            href={resume.fileUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-          >
-            <ExternalLink className="w-5 h-5" />
-            View Resume
-          </a>
-        )}
+          {/* Action */}
+          {resume.fileUrl && (
+            <a
+              href={resume.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-sm hover:shadow-md transition shrink-0"
+            >
+              <ExternalLink size={17} />
+              View Resume
+            </a>
+          )}
+        </div>
       </div>
 
       {/* ATS Score */}
