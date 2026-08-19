@@ -12,6 +12,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { getDashboardData } from "../apis/dashboardApi.js";
 import { useEffect, useState } from "react";
+import Skeleton from "../components/utils/Skeleton.js";
 
 const actions = [
   {
@@ -33,6 +34,161 @@ const actions = [
     link: "/dashboard/profile",
   },
 ];
+
+/*
+ * Dashboard Skeleton
+ *
+ * Displayed while dashboard data is being fetched.
+ */
+const DashboardSkeleton = () => {
+  return (
+    <div className="space-y-8">
+      {/* Welcome Banner */}
+      <div className="rounded-3xl bg-white border p-8">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="w-full">
+            <Skeleton className="h-10 w-72" />
+
+            <Skeleton className="h-5 w-full max-w-xl mt-4" />
+            <Skeleton className="h-5 w-4/5 max-w-lg mt-2" />
+          </div>
+
+          <Skeleton className="h-14 w-48 rounded-xl" />
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="bg-white rounded-2xl border p-6 shadow-sm">
+            <Skeleton className="w-14 h-14 rounded-xl" />
+
+            <Skeleton className="h-4 w-28 mt-5" />
+
+            <Skeleton className="h-9 w-20 mt-3" />
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <Skeleton className="h-8 w-40 mb-5" />
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="bg-white border rounded-2xl p-6">
+              <Skeleton className="w-14 h-14 rounded-xl" />
+
+              <Skeleton className="h-6 w-40 mt-5" />
+
+              <Skeleton className="h-4 w-32 mt-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Analyses */}
+      <div className="bg-white rounded-2xl border shadow-sm">
+        <div className="p-6 border-b">
+          <Skeleton className="h-7 w-48" />
+
+          <Skeleton className="h-4 w-64 mt-3" />
+        </div>
+
+        {/* Desktop table skeleton */}
+        <div className="hidden md:block overflow-hidden">
+          <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-gray-50">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16 mx-auto" />
+          </div>
+
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="grid grid-cols-5 gap-4 items-center px-6 py-5 border-t"
+            >
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-11 h-11 rounded-xl" />
+
+                <div>
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-24 mt-2" />
+                </div>
+              </div>
+
+              <Skeleton className="h-5 w-12" />
+
+              <Skeleton className="h-6 w-20 rounded-full" />
+
+              <Skeleton className="h-4 w-24" />
+
+              <Skeleton className="h-9 w-9 rounded-lg mx-auto" />
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile skeleton */}
+        <div className="md:hidden p-6 space-y-5">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="border rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-11 h-11 rounded-xl" />
+
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-24 mt-2" />
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-4">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Score Overview */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {[1, 2].map((item) => (
+          <div key={item} className="bg-white border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-4 w-32" />
+
+                <Skeleton className="h-10 w-20 mt-3" />
+              </div>
+
+              <Skeleton className="w-14 h-14 rounded-xl" />
+            </div>
+
+            <Skeleton className="h-4 w-72 max-w-full mt-4" />
+          </div>
+        ))}
+      </div>
+
+      {/* AI Tip */}
+      <div className="rounded-2xl border bg-white p-6">
+        <div className="flex gap-4">
+          <Skeleton className="w-14 h-14 rounded-xl flex-shrink-0" />
+
+          <div className="flex-1">
+            <Skeleton className="h-6 w-40" />
+
+            <Skeleton className="h-4 w-full mt-3" />
+            <Skeleton className="h-4 w-11/12 mt-2" />
+            <Skeleton className="h-4 w-4/5 mt-2" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -62,20 +218,16 @@ const Dashboard = () => {
     fetchDashboard();
   }, []);
 
-  // Loading State
+  /*
+   * Dashboard loading state
+   */
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-
-          <p className="mt-4 text-gray-500">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
-  // Error State
+  /*
+   * Dashboard error state
+   */
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">

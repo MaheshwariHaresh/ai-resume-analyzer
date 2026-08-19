@@ -1,15 +1,30 @@
 import express from "express";
+
+import {
+  register,
+  login,
+  refreshAccessToken,
+  logout,
+  googleLogin,
+} from "../controllers/authController.js";
+
 const router = express.Router();
 
-import { register, login, getProfile } from "../controllers/authController.js";
+/*
+ * Public Authentication Routes
+ */
 
-import authMiddleware from "../middleware/authMiddleware.js";
-
-// Public Routes
+// Register
 router.post("/register", register);
+
+// Login
 router.post("/login", login);
 
-// Protected Routes
-router.get("/profile", authMiddleware, getProfile);
+// Refresh Access Token
+router.post("/refresh", refreshAccessToken);
 
+// Logout
+router.post("/logout", logout);
+
+router.post("/google", googleLogin);
 export default router;

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../apis/authApi.js";
+import { loginUser, googleLoginUser } from "../apis/authApi.js";
 import { useAuth } from "../context/AuthContext.js";
 
 import {
@@ -28,6 +28,63 @@ const Login = () => {
 
   const [showPassword, setShowPassword] = useState(false);
 
+  // Handle google login
+
+  const handleGoogleLogin = async (response) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await googleLoginUser(response.credential);
+
+      if (!data.success || !data.accessToken || !data.user) {
+        throw new Error("Invalid Google login response from server.");
+      }
+
+      /*
+       * Reuse the existing authentication flow.
+       *
+       * AuthContext handles:
+       * - React authentication state
+       * - accessToken
+       * - localStorage
+       *
+       * Backend handles:
+       * - refresh token
+       * - HttpOnly cookie
+       */
+      login(data.user, data.accessToken);
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Google Login Error:", error);
+
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to sign in with Google.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initializeGoogleLogin = () => {
+      if (!window.google) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+      });
+    };
+
+    initializeGoogleLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -43,7 +100,32 @@ const Login = () => {
       const data = await loginUser(formData);
 
       if (data.success) {
-        login(data.user, data.token);
+        /*
+         * Backend now returns:
+         *
+         * {
+         *   accessToken,
+         *   user
+         * }
+         *
+         * Refresh token is stored securely by the backend
+         * inside an HttpOnly cookie.
+         */
+        if (!data.accessToken || !data.user) {
+          throw new Error("Invalid login response from server.");
+        }
+
+        /*
+         * Store authentication state through AuthContext.
+         *
+         * AuthContext stores:
+         * - accessToken
+         * - user
+         *
+         * Refresh token is NOT stored in localStorage.
+         */
+        login(data.user, data.accessToken);
+
         navigate("/dashboard");
       }
     } catch (error) {
@@ -51,6 +133,7 @@ const Login = () => {
 
       setError(
         error.response?.data?.message ||
+          error.message ||
           "Unable to sign in. Please check your credentials.",
       );
     } finally {
@@ -74,7 +157,7 @@ const Login = () => {
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
 
   const isFormValid =
-    formData.email.trim() && formData.password.trim() && isValidEmail;
+    formData.email.trim() && isValidEmail && formData.password.length >= 6;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100 flex items-center justify-center px-6 py-10">
@@ -126,10 +209,31 @@ const Login = () => {
             {/* Google */}
             <button
               type="button"
-              className="w-full mt-8 flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 hover:bg-gray-50 transition"
+              onClick={() => {
+                if (!window.google) {
+                  setError(
+                    "Google Sign-In is not available. Please try again.",
+                  );
+                  return;
+                }
+
+                window.google.accounts.id.prompt();
+              }}
+              className="group relative w-full mt-8 h-14 overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] active:translate-y-0"
             >
-              <FaGoogle className="text-red-500 text-lg" />
-              Continue with Google
+              {/* Subtle hover background */}
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/60 to-indigo-50/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+              <span className="relative flex items-center justify-center gap-3">
+                {/* Google Icon */}
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
+                  <FaGoogle className="text-[17px] text-red-500" />
+                </span>
+
+                <span className="text-[15px] font-semibold text-gray-700 tracking-tight">
+                  Continue with Google
+                </span>
+              </span>
             </button>
 
             {/* Divider */}

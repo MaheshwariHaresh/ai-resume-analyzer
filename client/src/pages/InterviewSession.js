@@ -1,16 +1,26 @@
-import { Brain, ChevronRight, Gauge, Send, Loader2 } from "lucide-react";
+import {
+  Brain,
+  ChevronRight,
+  Gauge,
+  Send,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Clock3,
+} from "lucide-react";
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import {
   getInterviewSession,
   saveInterviewProgress,
   submitInterviewSession,
 } from "../apis/interviewApi";
+
 import { useInterview } from "../context/InterviewContext";
 
 const InterviewSession = () => {
-  console.log("InterviewSession rendered");
-
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -19,22 +29,21 @@ const InterviewSession = () => {
   const [session, setSession] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
   const [error, setError] = useState("");
 
-  /*
-   * Load Interview Session
-   *
-   * This runs only when sessionId changes.
-   */
+  // ==========================================
+  // Load Interview Session
+  // ==========================================
+
   useEffect(() => {
     if (!sessionId) return;
 
     const fetchSession = async () => {
-      console.log("Fetching interview session:", sessionId);
-
       try {
         setLoading(true);
         setError("");
@@ -45,14 +54,10 @@ const InterviewSession = () => {
 
         setSession(interview);
 
-        /*
-         * Mark this interview as active.
-         */
+        // Mark interview as active
         setActiveInterview(sessionId);
 
-        /*
-         * Restore previously saved answers.
-         */
+        // Restore previously saved answers
         const restoredAnswers = interview.questions.map((question, index) => ({
           question: question.question,
           answer: interview.answers?.[index]?.answer || "",
@@ -60,9 +65,7 @@ const InterviewSession = () => {
 
         setAnswers(restoredAnswers);
 
-        /*
-         * Resume from the first unanswered question.
-         */
+        // Resume from first unanswered question
         const firstUnansweredIndex = restoredAnswers.findIndex(
           (item) => !item.answer || !item.answer.trim(),
         );
@@ -70,10 +73,6 @@ const InterviewSession = () => {
         if (firstUnansweredIndex !== -1) {
           setCurrentQuestion(firstUnansweredIndex);
         } else {
-          /*
-           * If all questions are answered,
-           * open the final question.
-           */
           setCurrentQuestion(interview.questions.length - 1);
         }
       } catch (error) {
@@ -90,9 +89,10 @@ const InterviewSession = () => {
     fetchSession();
   }, [sessionId, setActiveInterview]);
 
-  /*
-   * Browser refresh / tab close protection.
-   */
+  // ==========================================
+  // Browser Refresh / Tab Close Protection
+  // ==========================================
+
   useEffect(() => {
     const handleBeforeUnload = (event) => {
       if (!session || submitting) {
@@ -110,13 +110,11 @@ const InterviewSession = () => {
     };
   }, [session, submitting]);
 
-  /*
-   * Handle Answer Change
-   */
+  // ==========================================
+  // Handle Answer Change
+  // ==========================================
+
   const handleAnswerChange = (value) => {
-    /*
-     * Do not allow changes while saving/submitting.
-     */
     if (saving || submitting) {
       return;
     }
@@ -132,31 +130,22 @@ const InterviewSession = () => {
       ),
     );
 
-    /*
-     * Clear validation error when user starts typing.
-     */
     if (error) {
       setError("");
     }
   };
 
-  /*
-   * Save Current Answer + Move To Next Question
-   */
+  // ==========================================
+  // Save Current Answer + Next
+  // ==========================================
+
   const handleNext = async () => {
-    /*
-     * Prevent duplicate clicks.
-     */
     if (saving || submitting) {
       return;
     }
 
     const currentAnswer = answers[currentQuestion]?.answer?.trim();
 
-    /*
-     * Current question MUST be answered before
-     * moving to the next question.
-     */
     if (!currentAnswer) {
       setError(
         "Please answer this question before continuing to the next question.",
@@ -169,24 +158,11 @@ const InterviewSession = () => {
       setSaving(true);
       setError("");
 
-      /*
-       * Save the complete current progress.
-       *
-       * The next question will only open after
-       * the backend successfully saves the answer.
-       */
       await saveInterviewProgress(sessionId, answers);
 
-      /*
-       * Move forward only after successful save.
-       */
       if (currentQuestion < session.questions.length - 1) {
         setCurrentQuestion((prev) => prev + 1);
 
-        /*
-         * Scroll to top so the next question starts
-         * from a clean position.
-         */
         window.scrollTo({
           top: 0,
           behavior: "smooth",
@@ -204,17 +180,15 @@ const InterviewSession = () => {
     }
   };
 
-  /*
-   * Submit Interview
-   */
+  // ==========================================
+  // Submit Interview
+  // ==========================================
+
   const handleSubmit = async () => {
     if (submitting || saving) {
       return;
     }
 
-    /*
-     * Validate every answer before submission.
-     */
     const unanswered = answers.some(
       (item) => !item.answer || !item.answer.trim(),
     );
@@ -229,21 +203,12 @@ const InterviewSession = () => {
       setSubmitting(true);
       setError("");
 
-      /*
-       * Submit answers to backend.
-       */
-      const response = await submitInterviewSession(sessionId, answers);
+      await submitInterviewSession(sessionId, answers);
 
-      console.log("Interview Submitted:", response);
-
-      /*
-       * Interview completed.
-       */
+      // Clear active interview
       clearInterview();
 
-      /*
-       * Navigate to result page.
-       */
+      // Navigate to result
       navigate(`/dashboard/interview/result/${sessionId}`);
     } catch (error) {
       console.error("Submit Interview Error:", error);
@@ -257,35 +222,52 @@ const InterviewSession = () => {
     }
   };
 
-  /*
-   * Loading State
-   */
+  // ==========================================
+  // Loading State
+  // ==========================================
+
   if (loading) {
     return (
-      <div className="min-h-[500px] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-purple-600">
-          <Loader2 className="animate-spin" size={28} />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-8 py-7 text-center">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mx-auto">
+            <Loader2 size={25} className="text-purple-600 animate-spin" />
+          </div>
 
-          <span className="font-medium">Loading interview...</span>
+          <h2 className="mt-4 font-semibold text-gray-900">
+            Loading Interview
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Preparing your interview session...
+          </p>
         </div>
       </div>
     );
   }
 
-  /*
-   * Error State
-   */
+  // ==========================================
+  // Error State
+  // ==========================================
+
   if (error && !session) {
     return (
-      <div className="min-h-[500px] flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-6 text-center max-w-md">
-          <h2 className="font-bold text-lg">Unable to Load Interview</h2>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 text-center max-w-md">
+          <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mx-auto">
+            <AlertCircle size={28} className="text-red-500" />
+          </div>
 
-          <p className="mt-2">{error}</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-5">
+            Unable to Load Interview
+          </h2>
+
+          <p className="text-sm text-gray-500 mt-2 leading-6">{error}</p>
 
           <button
+            type="button"
             onClick={() => navigate("/dashboard/interview")}
-            className="mt-5 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg"
+            className="mt-6 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold transition"
           >
             Back to Interview Coach
           </button>
@@ -294,18 +276,30 @@ const InterviewSession = () => {
     );
   }
 
-  /*
-   * No Questions State
-   */
+  // ==========================================
+  // No Questions
+  // ==========================================
+
   if (!session || !session.questions?.length) {
     return (
-      <div className="min-h-[500px] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold">No Questions Found</h2>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 text-center max-w-md">
+          <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center mx-auto">
+            <Brain size={28} className="text-gray-400" />
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-900 mt-5">
+            No Questions Found
+          </h2>
+
+          <p className="text-sm text-gray-500 mt-2">
+            This interview session does not contain any questions.
+          </p>
 
           <button
+            type="button"
             onClick={() => navigate("/dashboard/interview")}
-            className="mt-4 text-purple-600 hover:underline"
+            className="mt-5 text-sm font-semibold text-purple-600 hover:text-purple-700"
           >
             Back to Interview Coach
           </button>
@@ -313,6 +307,10 @@ const InterviewSession = () => {
       </div>
     );
   }
+
+  // ==========================================
+  // Interview Data
+  // ==========================================
 
   const question = session.questions[currentQuestion];
 
@@ -328,168 +326,251 @@ const InterviewSession = () => {
 
   const currentAnswer = answers[currentQuestion]?.answer || "";
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
+  const answeredQuestions = answers.filter(
+    (item) => item.answer && item.answer.trim(),
+  ).length;
 
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-8 text-white">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+  // ==========================================
+  // UI
+  // ==========================================
+
+  return (
+    <div className="space-y-8 pb-8">
+      {/* ========================================== */}
+      {/* Header */}
+      {/* ========================================== */}
+
+      <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-7 md:p-8 text-white shadow-sm">
+        {/* Decorative Circle */}
+
+        <div className="absolute -top-20 -right-20 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Title */}
 
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Brain size={34} />
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 border border-white/10 flex items-center justify-center shrink-0">
+              <Brain size={31} />
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold">AI Interview Coach</h1>
+              <p className="text-sm font-medium text-purple-100 mb-1">
+                AI Interview Session
+              </p>
 
-              <p className="mt-2 text-purple-100">
-                {session.interviewType} Interview
+              <h1 className="text-2xl md:text-3xl font-bold">
+                {session.interviewType || "AI"} Interview
+              </h1>
+
+              <p className="mt-2 text-sm text-purple-100">
+                Answer each question carefully and demonstrate your experience.
               </p>
             </div>
           </div>
 
           {/* Interview Information */}
 
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Gauge size={18} />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/10 text-sm">
+              <Gauge size={17} />
 
-              <span>{session.difficulty}</span>
+              <span>{session.difficulty || "Medium"}</span>
             </div>
 
-            <div className="bg-white/20 px-4 py-2 rounded-xl">
-              {totalQuestions} Questions
+            <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/10 text-sm">
+              <Clock3 size={17} />
+
+              <span>{totalQuestions} Questions</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Progress */}
+      {/* ========================================== */}
+      {/* Progress Card */}
+      {/* ========================================== */}
 
-      <div className="bg-white border rounded-2xl p-5 shadow-sm">
-        <div className="flex justify-between items-center mb-3">
-          <span className="font-semibold">
-            Question {questionNumber} of {totalQuestions}
-          </span>
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div>
+            <p className="text-sm text-gray-500">Interview Progress</p>
 
-          <span className="text-gray-500">
-            {remainingQuestions > 0
-              ? `${remainingQuestions} remaining`
-              : "Final question"}
-          </span>
+            <h2 className="font-bold text-gray-900 mt-0.5">
+              Question {questionNumber} of {totalQuestions}
+            </h2>
+          </div>
+
+          <div className="text-right">
+            <p className="text-2xl font-bold text-purple-600">
+              {Math.round(progress)}%
+            </p>
+
+            <p className="text-xs text-gray-400">
+              {remainingQuestions > 0
+                ? `${remainingQuestions} remaining`
+                : "Final question"}
+            </p>
+          </div>
         </div>
+
+        {/* Progress Bar */}
 
         <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-purple-600 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full transition-all duration-500"
+            style={{
+              width: `${progress}%`,
+            }}
           />
         </div>
 
-        <div className="flex justify-end mt-2">
-          <span className="text-sm text-gray-400">
-            {Math.round(progress)}% complete
+        {/* Progress Details */}
+
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <CheckCircle2 size={15} className="text-green-500" />
+
+            <span>{answeredQuestions} answered</span>
+          </div>
+
+          <span className="text-xs text-gray-400">
+            {totalQuestions - answeredQuestions} remaining
           </span>
         </div>
       </div>
 
-      {/* Question */}
+      {/* ========================================== */}
+      {/* Question Card */}
+      {/* ========================================== */}
 
-      <div className="bg-white border rounded-2xl shadow-sm p-8">
-        {/* Question Meta */}
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        {/* Question Header */}
 
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <span className="text-sm font-semibold text-purple-600 bg-purple-50 px-4 py-2 rounded-full">
-            {question.difficulty}
-          </span>
+        <div className="bg-gray-50 border-b border-gray-100 p-6 md:p-7">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">
+                {questionNumber}
+              </span>
 
-          <span className="text-sm text-gray-500">
-            Question {questionNumber}
-          </span>
+              <span className="px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 text-xs font-semibold">
+                {question.difficulty || session.difficulty || "Medium"}
+              </span>
+            </div>
+
+            <span className="text-xs font-medium text-gray-400">
+              Question {questionNumber}
+            </span>
+          </div>
+
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-8">
+            {question.question}
+          </h2>
         </div>
 
-        {/* Question Text */}
+        {/* Answer Area */}
 
-        <h2 className="text-2xl font-bold text-gray-900 leading-relaxed">
-          {question.question}
-        </h2>
+        <div className="p-6 md:p-7">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <label
+              htmlFor="interview-answer"
+              className="text-sm font-semibold text-gray-800"
+            >
+              Your Answer
+            </label>
 
-        {/* Answer */}
-
-        <div className="mt-8">
-          <label className="font-semibold text-gray-700 block mb-3">
-            Your Answer
-          </label>
-
-          <textarea
-            value={currentAnswer}
-            onChange={(e) => handleAnswerChange(e.target.value)}
-            disabled={saving || submitting}
-            placeholder="Type your answer here..."
-            rows={8}
-            className="w-full border border-gray-200 rounded-2xl p-5 outline-none resize-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-50 disabled:cursor-not-allowed transition"
-          />
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
-            <p className="text-sm text-gray-400">
-              <span className="font-medium text-gray-500">Tip:</span> Structure
-              your answer clearly and include real examples from your projects
-              whenever relevant.
-            </p>
-
-            <span className="text-xs text-gray-400 shrink-0">
+            <span className="text-xs text-gray-400">
               {currentAnswer.trim().length} characters
             </span>
           </div>
+
+          <textarea
+            id="interview-answer"
+            value={currentAnswer}
+            onChange={(e) => handleAnswerChange(e.target.value)}
+            disabled={saving || submitting}
+            placeholder="Write your answer here..."
+            rows={9}
+            className="w-full border border-gray-200 rounded-2xl p-5 text-sm md:text-base text-gray-800 leading-7 outline-none resize-none bg-white placeholder:text-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 disabled:bg-gray-50 disabled:cursor-not-allowed transition"
+          />
+
+          {/* Answer Tip */}
+
+          <div className="mt-4 flex items-start gap-3 p-4 rounded-xl bg-purple-50 border border-purple-100">
+            <Brain size={18} className="text-purple-600 shrink-0 mt-0.5" />
+
+            <div>
+              <p className="text-sm font-semibold text-purple-900">
+                Interview Tip
+              </p>
+
+              <p className="text-xs md:text-sm text-purple-800/70 mt-1 leading-6">
+                Structure your answer clearly and use real examples from your
+                projects or professional experience whenever relevant.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* ========================================== */}
       {/* Error */}
+      {/* ========================================== */}
 
       {error && session && (
-        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
-          {error}
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3.5">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+
+          <p className="text-sm leading-6">{error}</p>
         </div>
       )}
 
-      {/* Navigation */}
+      {/* ========================================== */}
+      {/* Navigation / Action */}
+      {/* ========================================== */}
 
-      <div className="bg-white border rounded-2xl p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Question Counter */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+          {/* Status */}
 
-          <div className="text-sm font-semibold text-gray-500">
-            <span className="text-purple-600">{questionNumber}</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  isLastQuestion ? "bg-green-500" : "bg-purple-500"
+                }`}
+              />
 
-            <span className="mx-1">/</span>
+              <span className="text-sm font-semibold text-gray-800">
+                {isLastQuestion ? "You're on the final question" : "Keep going"}
+              </span>
+            </div>
 
-            <span>{totalQuestions}</span>
-
-            <span className="ml-2 text-gray-400 font-normal">
-              {isLastQuestion ? "Final question" : "Keep going"}
-            </span>
+            <p className="text-xs text-gray-400 mt-1.5">
+              {isLastQuestion
+                ? "Review your answer and submit the interview."
+                : "Save your answer to continue."}
+            </p>
           </div>
 
-          {/* Action Button */}
+          {/* Action */}
 
           {!isLastQuestion ? (
             <button
               type="button"
               onClick={handleNext}
               disabled={saving || submitting}
-              className="w-full sm:w-auto min-w-[180px] px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full sm:w-auto min-w-[190px] px-6 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-all"
             >
               {saving ? (
                 <>
-                  <Loader2 size={19} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" />
                   Saving Answer...
                 </>
               ) : (
                 <>
                   Save & Continue
-                  <ChevronRight size={20} />
+                  <ChevronRight size={19} />
                 </>
               )}
             </button>
@@ -497,23 +578,46 @@ const InterviewSession = () => {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || saving || !currentAnswer.trim()}
-              className="w-full sm:w-auto min-w-[180px] px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              disabled={
+                submitting ||
+                saving ||
+                !currentAnswer.trim() ||
+                answeredQuestions !== totalQuestions
+              }
+              className="w-full sm:w-auto min-w-[210px] px-6 py-3.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-all"
             >
               {submitting ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={19} className="animate-spin" />
                   Evaluating Interview...
                 </>
               ) : (
                 <>
                   Submit Interview
-                  <Send size={19} />
+                  <Send size={18} />
                 </>
               )}
             </button>
           )}
         </div>
+      </div>
+
+      {/* ========================================== */}
+      {/* Bottom Progress */}
+      {/* ========================================== */}
+
+      <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+        <CheckCircle2 size={14} className="text-green-500" />
+
+        <span>
+          {answeredQuestions} of {totalQuestions} questions answered
+        </span>
+
+        <span>•</span>
+
+        <span>
+          {isLastQuestion ? "Ready to submit" : "Interview in progress"}
+        </span>
       </div>
     </div>
   );

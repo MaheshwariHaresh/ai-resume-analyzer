@@ -23,6 +23,119 @@ import Stat from "../components/utils/Stat";
 import ChangePasswordModal from "../components/utils/ChangePasswordModal";
 import DeleteAccountModal from "../components/utils/DeleteAccountModal";
 
+/* =================================================
+   PROFILE SKELETON
+================================================= */
+
+const ProfileSkeleton = () => {
+  return (
+    <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
+      {/* Profile Hero */}
+      <div className="relative overflow-hidden bg-gray-200 rounded-3xl p-7 md:p-9">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          {/* Avatar */}
+          <div className="w-24 h-24 shrink-0 rounded-2xl bg-gray-300" />
+
+          {/* User Info */}
+          <div className="space-y-3 flex-1">
+            <div className="h-4 w-28 bg-gray-300 rounded" />
+            <div className="h-8 w-56 bg-gray-300 rounded" />
+
+            <div className="flex gap-5">
+              <div className="h-4 w-32 bg-gray-300 rounded" />
+              <div className="h-4 w-28 bg-gray-300 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Personal Information */}
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <div className="h-5 w-48 bg-gray-200 rounded" />
+            <div className="h-4 w-72 bg-gray-100 rounded mt-2" />
+          </div>
+
+          <div className="p-6 grid sm:grid-cols-2 gap-5">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
+              >
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-gray-200" />
+
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-20 bg-gray-200 rounded" />
+                  <div className="h-4 w-32 bg-gray-300 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+            <div className="h-10 w-32 bg-gray-200 rounded-lg" />
+          </div>
+        </div>
+
+        {/* Account Statistics */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+          <div className="px-6 py-5 border-b border-gray-100">
+            <div className="h-5 w-44 bg-gray-200 rounded" />
+            <div className="h-4 w-52 bg-gray-100 rounded mt-2" />
+          </div>
+
+          <div className="p-6 space-y-6">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-200" />
+
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-28 bg-gray-200 rounded" />
+                  <div className="h-4 w-16 bg-gray-300 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Account Settings */}
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <div className="h-5 w-40 bg-gray-200 rounded" />
+          <div className="h-4 w-64 bg-gray-100 rounded mt-2" />
+        </div>
+
+        <div className="p-6 space-y-3">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div
+              key={index}
+              className="w-full flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-200" />
+
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded" />
+                  <div className="h-3 w-48 bg-gray-100 rounded" />
+                </div>
+              </div>
+
+              <div className="w-5 h-5 bg-gray-200 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* =================================================
+   PROFILE
+================================================= */
+
 const Profile = () => {
   const navigate = useNavigate();
 
@@ -58,7 +171,10 @@ const Profile = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // Fetch profile
+  /* =================================================
+     FETCH PROFILE
+  ================================================= */
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -92,7 +208,10 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  // Change password
+  /* =================================================
+     CHANGE PASSWORD
+  ================================================= */
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -123,6 +242,8 @@ const Profile = () => {
         setPasswordSuccess("");
       }, 1500);
     } catch (error) {
+      console.error("Change Password Error:", error);
+
       setPasswordError(
         error.response?.data?.message || "Failed to change password.",
       );
@@ -131,7 +252,10 @@ const Profile = () => {
     }
   };
 
-  // Delete account
+  /* =================================================
+     DELETE ACCOUNT
+  ================================================= */
+
   const handleDeleteAccount = async () => {
     try {
       setDeleteLoading(true);
@@ -139,7 +263,13 @@ const Profile = () => {
 
       await deleteAccount();
 
+      /*
+       * AuthContext should normally handle authentication
+       * cleanup. Remove old token key as a safety fallback.
+       */
       localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
 
       navigate("/login", { replace: true });
     } catch (error) {
@@ -153,40 +283,44 @@ const Profile = () => {
     }
   };
 
-  // Loading
+  /* =================================================
+     LOADING STATE
+  ================================================= */
+
   if (loading) {
+    return <ProfileSkeleton />;
+  }
+
+  /* =================================================
+     ERROR STATE
+  ================================================= */
+
+  if (error && !profile.email) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+        <div className="bg-white border border-red-100 rounded-2xl p-8 text-center max-w-md w-full">
+          <p className="text-red-500 text-sm">{error}</p>
 
-          <p className="text-sm text-gray-500">Loading profile...</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
-  // Error
-  if (error && !profile.email) {
-    return (
-      <div className="bg-white border border-red-100 rounded-2xl p-8 text-center">
-        <p className="text-red-500 text-sm">{error}</p>
+  /* =================================================
+     INITIALS
+  ================================================= */
 
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="mt-4 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  // Generate initials from full name
   const initials = profile.fullName
     ? profile.fullName
         .split(" ")
+        .filter(Boolean)
         .map((name) => name[0])
         .join("")
         .slice(0, 2)
@@ -195,7 +329,10 @@ const Profile = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      {/* Profile Hero */}
+      {/* =================================================
+          PROFILE HERO
+      ================================================= */}
+
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 rounded-3xl p-7 md:p-9 text-white shadow-lg">
         {/* Background Decoration */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
@@ -235,9 +372,13 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Main Grid */}
+      {/* =================================================
+          MAIN GRID
+      ================================================= */}
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Personal Information */}
+
         <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm">
           <div className="px-6 py-5 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
@@ -288,6 +429,7 @@ const Profile = () => {
           </div>
 
           {/* Edit Profile */}
+
           <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
             <button
               type="button"
@@ -299,7 +441,9 @@ const Profile = () => {
             </button>
           </div>
         </div>
+
         {/* Account Statistics */}
+
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
           <div className="px-6 py-5 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
@@ -343,7 +487,10 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Account Settings */}
+      {/* =================================================
+          ACCOUNT SETTINGS
+      ================================================= */}
+
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">Account Settings</h2>
@@ -355,6 +502,7 @@ const Profile = () => {
 
         <div className="p-6 space-y-3">
           {/* Change Password */}
+
           <button
             type="button"
             onClick={() => {
@@ -384,6 +532,7 @@ const Profile = () => {
           </button>
 
           {/* Delete Account */}
+
           <button
             type="button"
             onClick={() => {
@@ -413,7 +562,10 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Password Modal */}
+      {/* =================================================
+          PASSWORD MODAL
+      ================================================= */}
+
       {showPasswordModal && (
         <ChangePasswordModal
           currentPassword={currentPassword}
@@ -428,7 +580,10 @@ const Profile = () => {
         />
       )}
 
-      {/* Delete Account Modal */}
+      {/* =================================================
+          DELETE ACCOUNT MODAL
+      ================================================= */}
+
       {showDeleteModal && (
         <DeleteAccountModal
           onDelete={handleDeleteAccount}
@@ -441,9 +596,9 @@ const Profile = () => {
   );
 };
 
-/* -------------------------------------------------
-   Info Item
-------------------------------------------------- */
+/* =================================================
+   INFO ITEM
+================================================= */
 
 const InfoItem = ({ icon, label, value }) => {
   return (

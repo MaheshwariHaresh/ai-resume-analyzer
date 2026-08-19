@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../apis/authApi";
+import { registerUser, googleLoginUser } from "../apis/authApi";
 import { useAuth } from "../context/AuthContext";
 
 import {
@@ -21,6 +21,7 @@ const Register = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -30,6 +31,73 @@ const Register = () => {
   });
 
   const [agree, setAgree] = useState(false);
+
+  /*
+   * Google Login
+   */
+  const handleGoogleLogin = async (response) => {
+    try {
+      setGoogleLoading(true);
+      setError("");
+
+      if (!response?.credential) {
+        throw new Error("Google authentication failed.");
+      }
+
+      const data = await googleLoginUser(response.credential);
+
+      if (!data.success || !data.accessToken || !data.user) {
+        throw new Error("Invalid Google login response from server.");
+      }
+
+      /*
+       * Reuse existing authentication flow.
+       */
+      login(data.user, data.accessToken);
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Google Registration Error:", error);
+
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to continue with Google.",
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  /*
+   * Initialize Google Identity Services.
+   */
+  useEffect(() => {
+    if (!window.google) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+    });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /*
+   * Open Google authentication.
+   */
+  const handleGoogleButtonClick = () => {
+    if (!window.google) {
+      setError("Google Sign-In is not available. Please try again.");
+      return;
+    }
+
+    setError("");
+
+    window.google.accounts.id.prompt();
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -42,10 +110,12 @@ const Register = () => {
     }
   };
 
+  /*
+   * Email/password registration.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Prevent invalid submission
     if (
       !formData.fullName.trim() ||
       !formData.email.trim() ||
@@ -68,7 +138,7 @@ const Register = () => {
       const data = await registerUser(payload);
 
       if (data.success) {
-        login(data.user, data.token);
+        login(data.user, data.accessToken);
         navigate("/dashboard");
       }
     } catch (error) {
@@ -83,7 +153,6 @@ const Register = () => {
     }
   };
 
-  // Basic email validation
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
 
   const isFormValid =
@@ -143,19 +212,38 @@ const Register = () => {
             {/* Google */}
             <button
               type="button"
-              className="w-full mt-8 flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 hover:bg-gray-50 transition"
+              onClick={handleGoogleButtonClick}
+              disabled={googleLoading || loading}
+              className="group relative w-full mt-8 h-14 overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <FaGoogle className="text-red-500 text-lg" />
-              Continue with Google
+              {/* Subtle hover background */}
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/60 to-indigo-50/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+              <span className="relative flex items-center justify-center gap-3">
+                {googleLoading ? (
+                  <span className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {/* Google Icon */}
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
+                      <FaGoogle className="text-[17px] text-red-600" />
+                    </span>
+
+                    <span className="text-[15px] font-semibold text-gray-700 tracking-tight">
+                      Continue with Google
+                    </span>
+                  </>
+                )}
+              </span>
             </button>
 
             {/* Divider */}
             <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-300" />
+              <div className="flex-1 h-px bg-gray-200" />
 
-              <span className="text-gray-400 text-sm">OR</span>
+              <span className="text-gray-400 text-xs font-medium">OR</span>
 
-              <div className="flex-1 h-px bg-gray-300" />
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
 
             {/* Full Name */}
@@ -247,7 +335,7 @@ const Register = () => {
             {/* Register */}
             <button
               type="submit"
-              disabled={!isFormValid || loading}
+              disabled={!isFormValid || loading || googleLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-semibold mt-8 transition flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
               {loading ? (

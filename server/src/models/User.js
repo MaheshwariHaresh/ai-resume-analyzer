@@ -18,8 +18,22 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider === "local";
+      },
       minlength: 6,
+    },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
 
     isVerified: {
@@ -27,6 +41,15 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    refreshTokenHash: {
+      type: String,
+      default: null,
+    },
+
+    refreshTokenExpiresAt: {
+      type: Date,
+      default: null,
+    },
     // Profile Information
     phone: {
       type: String,

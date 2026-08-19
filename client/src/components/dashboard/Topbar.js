@@ -38,10 +38,10 @@ const Topbar = () => {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsProfileOpen(false);
 
-    logout();
+    await logout();
 
     navigate("/login");
   };
@@ -75,6 +75,7 @@ const Topbar = () => {
   return (
     <header className="relative z-50 h-20 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between">
       {/* Search */}
+
       <form onSubmit={handleSearch} className="relative w-full max-w-md">
         <Search
           size={18}
@@ -92,8 +93,10 @@ const Topbar = () => {
       </form>
 
       {/* Right */}
+
       <div className="flex items-center gap-4 ml-6">
         {/* Notification */}
+
         <button
           type="button"
           className="relative w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition"
@@ -105,93 +108,127 @@ const Topbar = () => {
         </button>
 
         {/* Divider */}
+
         <div className="hidden sm:block h-8 w-px bg-gray-200" />
 
         {/* Profile */}
+
         <div ref={profileRef} className="relative">
-          {/* Profile Button */}
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen((prev) => !prev)}
-            aria-expanded={isProfileOpen}
-            aria-haspopup="menu"
-            className={`flex items-center gap-3 rounded-xl px-2 py-1.5 transition ${
-              isProfileOpen ? "bg-gray-50" : "hover:bg-gray-50"
-            }`}
-          >
-            {/* Avatar */}
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
-              {initials}
+          {!user ? (
+            /* Profile Skeleton */
+            <div className="flex items-center gap-3 px-2 py-1.5">
+              {/* Avatar Skeleton */}
+
+              <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse" />
+
+              {/* User Info Skeleton */}
+
+              <div className="hidden sm:block space-y-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+
+                <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+              </div>
+
+              {/* Chevron Skeleton */}
+
+              <div className="hidden sm:block w-4 h-4 bg-gray-200 rounded-full animate-pulse" />
             </div>
+          ) : (
+            <>
+              {/* Profile Button */}
 
-            {/* User Info */}
-            <div className="hidden sm:block text-left">
-              <p className="text-sm font-semibold text-gray-900">{userName}</p>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                aria-expanded={isProfileOpen}
+                aria-haspopup="menu"
+                className={`flex items-center gap-3 rounded-xl px-2 py-1.5 transition ${
+                  isProfileOpen ? "bg-gray-50" : "hover:bg-gray-50"
+                }`}
+              >
+                {/* Avatar */}
 
-              <p className="text-xs text-gray-500">{userRole}</p>
-            </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
+                  {initials}
+                </div>
 
-            <ChevronDown
-              size={16}
-              className={`hidden sm:block text-gray-400 transition-transform duration-200 ${
-                isProfileOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+                {/* User Info */}
 
-          {/* Profile Dropdown */}
-          {isProfileOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 top-full mt-3 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl shadow-gray-200/50 overflow-hidden"
-            >
-              {/* User Header */}
-              <div className="px-4 py-4 bg-gray-50 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-semibold">
-                    {initials}
+                <div className="hidden sm:block text-left">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {userName}
+                  </p>
+
+                  <p className="text-xs text-gray-500">{userRole}</p>
+                </div>
+
+                <ChevronDown
+                  size={16}
+                  className={`hidden sm:block text-gray-400 transition-transform duration-200 ${
+                    isProfileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Profile Dropdown */}
+
+              {isProfileOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-3 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl shadow-gray-200/50 overflow-hidden"
+                >
+                  {/* User Header */}
+
+                  <div className="px-4 py-4 bg-gray-50 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-semibold">
+                        {initials}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 truncate">
+                          {userName}
+                        </p>
+
+                        <p className="text-xs text-gray-500 truncate">
+                          {user?.email || "No email available"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm text-gray-900 truncate">
-                      {userName}
-                    </p>
+                  {/* Menu Items */}
 
-                    <p className="text-xs text-gray-500 truncate">
-                      {user?.email || "No email available"}
-                    </p>
+                  <div className="p-2">
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                      role="menuitem"
+                    >
+                      <User size={18} />
+
+                      <span>Profile</span>
+                    </Link>
+                  </div>
+
+                  {/* Logout */}
+
+                  <div className="border-t border-gray-100 p-2">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition"
+                      role="menuitem"
+                    >
+                      <LogOut size={18} />
+
+                      <span>Logout</span>
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Menu Items */}
-              <div className="p-2">
-                <Link
-                  to="/dashboard/profile"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
-                  role="menuitem"
-                >
-                  <User size={18} />
-
-                  <span>Profile</span>
-                </Link>
-              </div>
-
-              {/* Logout */}
-              <div className="border-t border-gray-100 p-2">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition"
-                  role="menuitem"
-                >
-                  <LogOut size={18} />
-
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>

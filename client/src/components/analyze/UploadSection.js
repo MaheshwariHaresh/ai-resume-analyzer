@@ -27,7 +27,10 @@ const UploadSection = () => {
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
-  // Validate selected file
+  // ==========================================
+  // Validate File
+  // ==========================================
+
   const validateFile = (selectedFile) => {
     if (!selectedFile) return false;
 
@@ -45,7 +48,10 @@ const UploadSection = () => {
     return true;
   };
 
-  // Set selected file
+  // ==========================================
+  // Process File
+  // ==========================================
+
   const processFile = (selectedFile) => {
     if (!validateFile(selectedFile)) return;
 
@@ -53,7 +59,10 @@ const UploadSection = () => {
     setError("");
   };
 
-  // File input
+  // ==========================================
+  // File Input
+  // ==========================================
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
 
@@ -65,7 +74,10 @@ const UploadSection = () => {
     e.target.value = "";
   };
 
-  // Drag events
+  // ==========================================
+  // Drag & Drop
+  // ==========================================
+
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -97,7 +109,10 @@ const UploadSection = () => {
     }
   };
 
-  // Remove selected file
+  // ==========================================
+  // Remove File
+  // ==========================================
+
   const removeFile = () => {
     if (loading) return;
 
@@ -105,14 +120,20 @@ const UploadSection = () => {
     setError("");
   };
 
-  // Open file browser
+  // ==========================================
+  // Open File Picker
+  // ==========================================
+
   const openFilePicker = () => {
     if (loading) return;
 
     fileInputRef.current?.click();
   };
 
-  // Analyze resume
+  // ==========================================
+  // Analyze Resume
+  // ==========================================
+
   const handleAnalyze = async () => {
     if (!file) {
       setError("Please upload a resume first.");
@@ -151,7 +172,10 @@ const UploadSection = () => {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-      {/* Header */}
+      {/* ==========================================
+          Header
+      ========================================== */}
+
       <div className="mb-7">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -170,7 +194,10 @@ const UploadSection = () => {
         </div>
       </div>
 
-      {/* Error */}
+      {/* ==========================================
+          Error
+      ========================================== */}
+
       {error && (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5">
           <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
@@ -185,7 +212,10 @@ const UploadSection = () => {
         </div>
       )}
 
-      {/* Upload / Selected File */}
+      {/* ==========================================
+          Upload Area
+      ========================================== */}
+
       {!file ? (
         <div
           onDragOver={handleDragOver}
@@ -206,7 +236,8 @@ const UploadSection = () => {
               : "border-gray-200 bg-gray-50/60 hover:border-blue-400 hover:bg-blue-50/40"
           }`}
         >
-          {/* Decorative background */}
+          {/* Decorative Background */}
+
           <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-blue-100/40 blur-3xl pointer-events-none" />
 
           <div className="relative flex flex-col items-center justify-center py-14 sm:py-16 px-6 text-center">
@@ -264,9 +295,136 @@ const UploadSection = () => {
             disabled={loading}
           />
         </div>
+      ) : loading ? (
+        /* ==========================================
+           AI ANALYSIS PROGRESS
+        ========================================== */
+
+        <div className="rounded-2xl border border-purple-100 bg-purple-50/40 overflow-hidden">
+          {/* File Information */}
+
+          <div className="px-5 py-4 border-b border-purple-100 bg-white/80">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-purple-600" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {file.name}
+                </p>
+
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-500">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+
+                  <span className="w-1 h-1 rounded-full bg-gray-300" />
+
+                  <span className="text-xs font-medium text-gray-500">
+                    {isPdf ? "PDF" : "DOCX"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analysis Content */}
+
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col items-center text-center">
+              {/* Animated Icon */}
+
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl bg-purple-200 animate-ping opacity-30" />
+
+                <div className="relative w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/20">
+                  <Sparkles className="text-white" size={30} />
+                </div>
+              </div>
+
+              <h3 className="mt-6 text-xl font-bold text-gray-900">
+                Analyzing Your Resume
+              </h3>
+
+              <p className="mt-2 text-sm text-gray-500 max-w-md leading-6">
+                Our AI is reviewing your resume for ATS compatibility, skills,
+                experience, and improvement opportunities.
+              </p>
+
+              {/* Progress Bar */}
+
+              <div className="w-full max-w-lg mt-7">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-purple-700">
+                    AI Analysis in Progress
+                  </span>
+
+                  <Loader2 size={16} className="text-purple-600 animate-spin" />
+                </div>
+
+                <div className="w-full h-3 bg-purple-100 rounded-full overflow-hidden">
+                  <div className="h-full w-1/2 bg-purple-600 rounded-full animate-[progress_1.8s_ease-in-out_infinite]" />
+                </div>
+
+                <p className="text-xs text-gray-400 mt-3">
+                  This may take a few moments. Please don't close or refresh the
+                  page.
+                </p>
+              </div>
+
+              {/* Processing Steps */}
+
+              <div className="w-full max-w-lg mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-white border border-purple-100 px-3 py-3">
+                  <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+
+                  <span className="text-xs font-medium text-gray-600">
+                    Resume Uploaded
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-white border border-purple-100 px-3 py-3">
+                  <Loader2
+                    size={16}
+                    className="text-purple-600 animate-spin shrink-0"
+                  />
+
+                  <span className="text-xs font-medium text-gray-600">
+                    AI Analyzing
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-white border border-gray-100 px-3 py-3">
+                  <Sparkles size={16} className="text-gray-300 shrink-0" />
+
+                  <span className="text-xs font-medium text-gray-400">
+                    Generating Results
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hidden File Input */}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={loading}
+          />
+        </div>
       ) : (
+        /* ==========================================
+           SELECTED FILE
+        ========================================== */
+
         <div className="rounded-2xl border border-blue-100 bg-blue-50/40 overflow-hidden">
-          {/* Selected file header */}
+          {/* Selected File Header */}
+
           <div className="px-5 py-4 border-b border-blue-100 bg-white/80">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
@@ -305,7 +463,8 @@ const UploadSection = () => {
             </div>
           </div>
 
-          {/* Ready state */}
+          {/* Ready State */}
+
           <div className="p-5">
             <div className="flex items-center gap-3 rounded-xl bg-white border border-gray-100 px-4 py-3.5">
               <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
@@ -324,6 +483,7 @@ const UploadSection = () => {
             </div>
 
             {/* Actions */}
+
             <div className="mt-4 flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
@@ -341,20 +501,13 @@ const UploadSection = () => {
                 disabled={loading}
                 className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-5 py-3 rounded-xl text-sm font-semibold transition shadow-sm shadow-blue-600/20"
               >
-                {loading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Analyzing Resume...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} />
-                    Analyze Resume
-                  </>
-                )}
+                <Sparkles size={18} />
+                Analyze Resume
               </button>
             </div>
           </div>
+
+          {/* Hidden File Input */}
 
           <input
             ref={fileInputRef}
@@ -367,7 +520,10 @@ const UploadSection = () => {
         </div>
       )}
 
-      {/* Information Cards */}
+      {/* ==========================================
+          Information Cards
+      ========================================== */}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
         <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
           <div className="flex items-center gap-2">
@@ -406,7 +562,10 @@ const UploadSection = () => {
         </div>
       </div>
 
-      {/* Bottom Note */}
+      {/* ==========================================
+          Bottom Note
+      ========================================== */}
+
       <div className="flex items-center justify-center gap-2 mt-5 text-xs text-gray-400">
         <Sparkles size={13} />
 
@@ -415,6 +574,28 @@ const UploadSection = () => {
           improvement opportunities.
         </span>
       </div>
+
+      {/* ==========================================
+          Progress Animation
+      ========================================== */}
+
+      <style>
+        {`
+          @keyframes progress {
+            0% {
+              transform: translateX(-100%);
+            }
+
+            50% {
+              transform: translateX(100%);
+            }
+
+            100% {
+              transform: translateX(200%);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

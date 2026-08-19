@@ -14,6 +14,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useEffect, useMemo, useState } from "react";
 
+import Skeleton from "../components/utils/Skeleton";
+
 const ResumeHistory = () => {
   const navigate = useNavigate();
 
@@ -26,9 +28,17 @@ const ResumeHistory = () => {
 
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // --------------------------------------------------
+  // Sync search with URL
+  // --------------------------------------------------
+
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
   }, [searchParams]);
+
+  // --------------------------------------------------
+  // Fetch Resumes
+  // --------------------------------------------------
 
   useEffect(() => {
     fetchResumes();
@@ -42,13 +52,16 @@ const ResumeHistory = () => {
 
       setResumes(res.data || []);
     } catch (error) {
-      console.log(error);
+      console.error("Get Resumes Error:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // --------------------------------------------------
   // Search + Status Filter
+  // --------------------------------------------------
+
   const filteredResumes = useMemo(() => {
     return resumes.filter((resume) => {
       const fileName = resume.originalFileName?.toLowerCase() || "";
@@ -65,7 +78,10 @@ const ResumeHistory = () => {
     });
   }, [resumes, search, statusFilter]);
 
-  // Search from History page
+  // --------------------------------------------------
+  // Search Handler
+  // --------------------------------------------------
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
 
@@ -84,7 +100,10 @@ const ResumeHistory = () => {
     });
   };
 
-  // DELETE RESUME
+  // --------------------------------------------------
+  // Delete Resume
+  // --------------------------------------------------
+
   const handleDelete = async (id) => {
     const ok = window.confirm("Delete this resume?");
 
@@ -95,11 +114,14 @@ const ResumeHistory = () => {
 
       setResumes((prev) => prev.filter((resume) => resume._id !== id));
     } catch (error) {
-      console.log(error);
+      console.error("Delete Resume Error:", error);
     }
   };
 
+  // --------------------------------------------------
   // Clear Filters
+  // --------------------------------------------------
+
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("All");
@@ -115,7 +137,10 @@ const ResumeHistory = () => {
 
   const hasFilters = search.trim() !== "" || statusFilter !== "All";
 
+  // --------------------------------------------------
   // Average ATS Score
+  // --------------------------------------------------
+
   const averageScore =
     resumes.length > 0
       ? Math.round(
@@ -126,20 +151,163 @@ const ResumeHistory = () => {
         )
       : 0;
 
+  // --------------------------------------------------
   // Highest ATS Score
+  // --------------------------------------------------
+
   const highestScore =
     resumes.length > 0
       ? Math.max(...resumes.map((resume) => resume.analysis?.atsScore || 0))
       : 0;
 
+  // ==================================================
+  // LOADING SKELETON
+  // ==================================================
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* =========================
+            Header Skeleton
+        ========================= */}
+
+        <div className="relative overflow-hidden bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex items-start gap-4">
+              {/* Icon */}
+              <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+
+              <div className="space-y-2">
+                {/* Small Label */}
+                <Skeleton className="h-4 w-28 rounded" />
+
+                {/* Heading */}
+                <Skeleton className="h-8 w-52 rounded-lg" />
+
+                {/* Description */}
+                <Skeleton className="h-4 w-80 max-w-full rounded" />
+              </div>
+            </div>
+
+            {/* Button */}
+            <Skeleton className="h-12 w-44 rounded-xl shrink-0" />
+          </div>
+        </div>
+
+        {/* =========================
+            Search Skeleton
+        ========================= */}
+
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <Skeleton className="h-12 flex-1 rounded-xl" />
+
+            {/* Select */}
+            <Skeleton className="h-12 md:w-48 rounded-xl" />
+
+            {/* Clear */}
+            <Skeleton className="h-12 w-24 rounded-xl" />
+          </div>
+        </div>
+
+        {/* =========================
+            Table Skeleton
+        ========================= */}
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-gray-50 px-6 py-4">
+            <div className="grid grid-cols-5 gap-6">
+              <Skeleton className="h-4 w-20 rounded" />
+
+              <Skeleton className="h-4 w-20 rounded" />
+
+              <Skeleton className="h-4 w-16 rounded" />
+
+              <Skeleton className="h-4 w-14 rounded" />
+
+              <Skeleton className="h-4 w-16 rounded mx-auto" />
+            </div>
+          </div>
+
+          {/* Table Rows */}
+          <div>
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="px-6 py-5 border-t border-gray-100">
+                <div className="grid grid-cols-5 gap-6 items-center">
+                  {/* Resume */}
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+
+                    <div className="space-y-2 min-w-0">
+                      <Skeleton className="h-4 w-40 rounded" />
+                      <Skeleton className="h-3 w-24 rounded" />
+                    </div>
+                  </div>
+
+                  {/* ATS */}
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-5 h-5 rounded-full" />
+                    <Skeleton className="h-4 w-12 rounded" />
+                  </div>
+
+                  {/* Status */}
+                  <Skeleton className="h-7 w-20 rounded-full" />
+
+                  {/* Date */}
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-4 h-4 rounded" />
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-center gap-3">
+                    <Skeleton className="w-9 h-9 rounded-lg" />
+                    <Skeleton className="w-9 h-9 rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* =========================
+            Summary Skeleton
+        ========================= */}
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+            >
+              <Skeleton className="h-4 w-28 rounded" />
+
+              <Skeleton className="h-9 w-20 rounded-lg mt-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ==================================================
+  // MAIN UI
+  // ==================================================
+
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* =========================
+          Header
+      ========================= */}
+
       <div className="relative overflow-hidden bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
         <div className="absolute -top-20 -right-20 w-48 h-48 bg-blue-50 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           {/* Title */}
+
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
               <FileText size={22} className="text-blue-600" />
@@ -161,6 +329,7 @@ const ResumeHistory = () => {
           </div>
 
           {/* Action */}
+
           <button
             type="button"
             onClick={() => navigate("/dashboard/analyze")}
@@ -172,10 +341,14 @@ const ResumeHistory = () => {
         </div>
       </div>
 
-      {/* Search & Filter */}
+      {/* =========================
+          Search & Filter
+      ========================= */}
+
       <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
+
           <div className="relative flex-1">
             <Search
               size={18}
@@ -192,6 +365,7 @@ const ResumeHistory = () => {
           </div>
 
           {/* Status */}
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -202,9 +376,12 @@ const ResumeHistory = () => {
             <option value="Completed">Completed</option>
 
             <option value="Pending">Pending</option>
+
+            <option value="Analyzing">Analyzing</option>
           </select>
 
           {/* Clear */}
+
           {hasFilters && (
             <button
               type="button"
@@ -218,6 +395,7 @@ const ResumeHistory = () => {
         </div>
 
         {/* Filter Result */}
+
         {hasFilters && (
           <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-500">
@@ -243,15 +421,13 @@ const ResumeHistory = () => {
         )}
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-20 text-center">
-          <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto" />
+      {/* =========================
+          Resume Table / Empty
+      ========================= */}
 
-          <p className="text-sm text-gray-500 mt-4">Loading your resumes...</p>
-        </div>
-      ) : filteredResumes.length === 0 ? (
+      {filteredResumes.length === 0 ? (
         /* Empty State */
+
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-16 text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
             <FileText size={24} className="text-gray-400" />
@@ -287,6 +463,8 @@ const ResumeHistory = () => {
           )}
         </div>
       ) : (
+        /* Resume Table */
+
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
@@ -315,100 +493,141 @@ const ResumeHistory = () => {
               </thead>
 
               <tbody>
-                {filteredResumes.map((resume) => (
-                  <tr
-                    key={resume._id}
-                    className="border-t border-gray-100 hover:bg-gray-50/70 transition"
-                  >
-                    {/* Resume */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                          <FileText className="text-blue-600" size={21} />
+                {filteredResumes.map((resume) => {
+                  const status = resume.uploadStatus?.toLowerCase();
+
+                  const score = resume.analysis?.atsScore || 0;
+
+                  return (
+                    <tr
+                      key={resume._id}
+                      className="border-t border-gray-100 hover:bg-gray-50/70 transition"
+                    >
+                      {/* Resume */}
+
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                            <FileText className="text-blue-600" size={21} />
+                          </div>
+
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate max-w-[280px]">
+                              {resume.originalFileName}
+                            </h3>
+
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              Resume Document
+                            </p>
+                          </div>
                         </div>
+                      </td>
 
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate max-w-[280px]">
-                            {resume.originalFileName}
-                          </h3>
+                      {/* ATS */}
 
-                          <p className="text-sm text-gray-500 mt-0.5">
-                            Resume Document
-                          </p>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp
+                            size={18}
+                            className={
+                              score >= 80
+                                ? "text-green-600"
+                                : score >= 60
+                                  ? "text-yellow-600"
+                                  : "text-red-600"
+                            }
+                          />
+
+                          <span
+                            className={`font-bold ${
+                              score >= 80
+                                ? "text-green-600"
+                                : score >= 60
+                                  ? "text-yellow-600"
+                                  : "text-red-600"
+                            }`}
+                          >
+                            {score}%
+                          </span>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* ATS */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp size={18} className="text-green-600" />
+                      {/* Status */}
 
-                        <span className="font-bold text-green-600">
-                          {resume.analysis?.atsScore || 0}%
+                      <td className="px-6 py-5">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            status === "completed"
+                              ? "bg-green-100 text-green-700"
+                              : status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : status === "analyzing"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {resume.uploadStatus || "Unknown"}
                         </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Status */}
-                    <td className="px-6 py-5">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          resume.uploadStatus?.toLowerCase() === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : resume.uploadStatus?.toLowerCase() === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {resume.uploadStatus || "Unknown"}
-                      </span>
-                    </td>
+                      {/* Date */}
 
-                    {/* Date */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2 text-gray-500 text-sm">
-                        <Calendar size={16} />
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                          <Calendar size={16} />
 
-                        {new Date(resume.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
+                          {new Date(resume.createdAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center justify-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/dashboard/resume/${resume._id}`)
-                          }
-                          title="View resume"
-                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
-                        >
-                          <Eye size={18} />
-                        </button>
+                      {/* Actions */}
 
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(resume._id)}
-                          title="Delete resume"
-                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/dashboard/resume/${resume._id}`)
+                            }
+                            title="View resume"
+                            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
+                          >
+                            <Eye size={18} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(resume._id)}
+                            title="Delete resume"
+                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Summary Cards */}
+      {/* =========================
+          Summary Cards
+      ========================= */}
+
       <div className="grid md:grid-cols-3 gap-6">
         {/* Total */}
+
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm text-gray-500">Total Resumes</h3>
 
@@ -418,6 +637,7 @@ const ResumeHistory = () => {
         </div>
 
         {/* Average */}
+
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm text-gray-500">Average ATS Score</h3>
 
@@ -427,6 +647,7 @@ const ResumeHistory = () => {
         </div>
 
         {/* Highest */}
+
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm text-gray-500">Highest Score</h3>
 
