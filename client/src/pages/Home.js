@@ -3,7 +3,7 @@ import HowItWorks from "../components/home/HowItWorks";
 import Services from "../components/home/Services";
 import Navbar from "../components/layout/Navbar";
 import UploadResumeCard from "../components/layout/UploadResumeCard";
-import Footer from "./Footer.";
+import Footer from "../components/layout/Footer.";
 
 const Home = () => {
   return (

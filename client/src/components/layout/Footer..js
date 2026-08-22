@@ -28,7 +28,7 @@ const Footer = () => {
             {/* Social Links */}
             <div className="flex items-center gap-3 mt-5">
               <a
-                href="#"
+                href="https://github.com/MaheshwariHaresh"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub"
@@ -38,7 +38,7 @@ const Footer = () => {
               </a>
 
               <a
-                href="#"
+                href="https://www.linkedin.com/in/maheshwari-harish"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
@@ -53,29 +53,33 @@ const Footer = () => {
           <div>
             <h3 className="text-sm font-semibold text-white">Quick Links</h3>
 
-            <ul className="mt-4 space-y-3 text-sm">
-              <li>
-                <a href="#features" className="hover:text-white transition">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-3 mt-4 text-sm">
+              {/* Column 1 */}
+              <div className="space-y-3">
+                <a
+                  href="#features"
+                  className="block hover:text-white transition"
+                >
                   Features
                 </a>
-              </li>
 
-              <li>
                 <a
                   href="#upload-resume"
-                  className="hover:text-white transition"
+                  className="block hover:text-white transition"
                 >
                   Analyze Resume
                 </a>
-              </li>
 
-              <li>
-                <a href="#how-it-works" className="hover:text-white transition">
+                <a
+                  href="#how-it-works"
+                  className="block hover:text-white transition"
+                >
                   How It Works
                 </a>
-              </li>
+              </div>
 
-              <li>
+              {/* Column 2 */}
+              <div className="space-y-3">
                 <Link
                   to="/login"
                   className="inline-flex items-center gap-1 hover:text-white transition"
@@ -83,8 +87,19 @@ const Footer = () => {
                   Get Started
                   <ArrowUpRight size={14} />
                 </Link>
-              </li>
-            </ul>
+
+                <Link
+                  to="/privacy-policy"
+                  className="block hover:text-white transition"
+                >
+                  Privacy Policy
+                </Link>
+
+                <Link to="/terms" className="block hover:text-white transition">
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 

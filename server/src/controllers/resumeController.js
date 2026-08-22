@@ -48,18 +48,28 @@ export const publicAnalyzeResume = asyncHandler(async (req, res) => {
  */
 
 export const uploadResume = asyncHandler(async (req, res) => {
+  const { jobDescription = "" } = req.body;
+
   if (!req.file) {
     throw new apiError("Please upload a resume.", 400);
   }
 
   try {
+    // Normalize Job Description
+    const normalizedJobDescription =
+      typeof jobDescription === "string" ? jobDescription.trim() : "";
+
     // Upload to Cloudinary
     const uploadResult = await uploadResumeToCloudinary(req.file.path);
 
     // Analyze Resume
-    const analysis = await analyzeResume(req.file.path, req.file.mimetype);
+    const analysis = await analyzeResume(
+      req.file.path,
+      req.file.mimetype,
+      normalizedJobDescription,
+    );
 
-    // Save MongoDB
+    // Save Resume + Job Description + Analysis to MongoDB
     const resume = await Resume.create({
       user: req.user._id,
 
@@ -69,12 +79,16 @@ export const uploadResume = asyncHandler(async (req, res) => {
 
       fileUrl: uploadResult.secureUrl,
 
+      // Save Job Description
+      jobDescription: normalizedJobDescription,
+
+      // Save AI Analysis
       analysis,
 
       uploadStatus: "completed",
     });
 
-    // Delete local file
+    // Delete local file after successful processing
     await fs.unlink(req.file.path);
 
     return res.status(201).json({
@@ -83,6 +97,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
       data: resume,
     });
   } catch (error) {
+    // Delete local file if something fails
     if (req.file?.path) {
       try {
         await fs.unlink(req.file.path);

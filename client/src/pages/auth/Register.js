@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser, googleLoginUser } from "../apis/authApi";
-import { useAuth } from "../context/AuthContext";
+import { registerUser, googleLoginUser } from "../../apis/authApi";
+import { useAuth } from "../../context/AuthContext";
+import minimumDelay from "../../components/utils/minimumDelay.js";
 
 import {
   FaGoogle,
@@ -44,7 +45,7 @@ const Register = () => {
         throw new Error("Google authentication failed.");
       }
 
-      const data = await googleLoginUser(response.credential);
+      const data = await minimumDelay(googleLoginUser(response.credential));
 
       if (!data.success || !data.accessToken || !data.user) {
         throw new Error("Invalid Google login response from server.");
@@ -135,7 +136,7 @@ const Register = () => {
         password: formData.password,
       };
 
-      const data = await registerUser(payload);
+      const data = await minimumDelay(registerUser(payload));
 
       if (data.success) {
         login(data.user, data.accessToken);

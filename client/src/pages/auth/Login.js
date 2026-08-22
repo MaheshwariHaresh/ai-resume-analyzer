@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser, googleLoginUser } from "../apis/authApi.js";
-import { useAuth } from "../context/AuthContext.js";
+import { loginUser, googleLoginUser } from "../../apis/authApi.js";
+import { useAuth } from "../../context/AuthContext.js";
+import minimumDelay from "../../components/utils/minimumDelay.js";
 
 import {
   FaGoogle,
@@ -97,7 +98,7 @@ const Login = () => {
       setLoading(true);
       setError("");
 
-      const data = await loginUser(formData);
+      const data = await minimumDelay(loginUser(formData));
 
       if (data.success) {
         /*

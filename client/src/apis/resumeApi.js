@@ -21,10 +21,11 @@ export const analyzePublicResume = async (file) => {
   return data;
 };
 
-export const uploadResume = async (file) => {
+export const uploadResume = async (file, jobDescript) => {
   const formData = new FormData();
 
   formData.append("resume", file);
+  formData.append("jobDescription", jobDescript);
 
   const { data } = await axios.post(`${BACKEND_URL}/resumes/upload`, formData, {
     headers: {

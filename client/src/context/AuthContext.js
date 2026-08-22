@@ -6,12 +6,7 @@ import {
   useState,
 } from "react";
 
-import {
-  loginUser,
-  registerUser,
-  refreshAccessToken,
-  logoutUser,
-} from "../apis/authApi";
+import { refreshAccessToken, logoutUser } from "../apis/authApi";
 import { setSkipAuthRefresh } from "../apis/axiosConfig";
 
 const AuthContext = createContext();

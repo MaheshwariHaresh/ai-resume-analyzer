@@ -18,7 +18,7 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-const UploadSection = () => {
+const UploadSection = ({ jobDescript = "" }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -144,7 +144,7 @@ const UploadSection = () => {
       setLoading(true);
       setError("");
 
-      const response = await uploadResume(file);
+      const response = await uploadResume(file, jobDescript);
 
       console.log("Resume Upload Response:", response);
 

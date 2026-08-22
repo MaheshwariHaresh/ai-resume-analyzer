@@ -87,3 +87,21 @@ export const googleLoginUser = async (idToken) => {
 
   return data;
 };
+
+// Forgot Password
+export const forgotPassword = async (email) => {
+  const { data } = await axios.post("/auth/forgot-password", {
+    email,
+  });
+
+  return data;
+};
+
+// Reset Password
+export const resetPassword = async (token, password) => {
+  const { data } = await axios.post(`/auth/reset-password/${token}`, {
+    password,
+  });
+
+  return data;
+};

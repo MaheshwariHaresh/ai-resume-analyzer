@@ -23,6 +23,13 @@ const resumeSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Job Description used for this resume analysis
+    jobDescription: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     analysis: {
       atsScore: {
         type: Number,
@@ -44,26 +51,32 @@ const resumeSchema = new mongoose.Schema(
           type: Number,
           default: 0,
         },
+
         experience: {
           type: Number,
           default: 0,
         },
+
         skills: {
           type: Number,
           default: 0,
         },
+
         education: {
           type: Number,
           default: 0,
         },
+
         projects: {
           type: Number,
           default: 0,
         },
+
         keywords: {
           type: Number,
           default: 0,
         },
+
         formatting: {
           type: Number,
           default: 0,
@@ -93,6 +106,34 @@ const resumeSchema = new mongoose.Schema(
       interviewQuestions: {
         type: [String],
         default: [],
+      },
+
+      // JD-specific analysis
+      jobAnalysis: {
+        matchScore: {
+          type: Number,
+          default: null,
+        },
+
+        matchSummary: {
+          type: String,
+          default: "",
+        },
+
+        matchingSkills: {
+          type: [String],
+          default: [],
+        },
+
+        missingSkills: {
+          type: [String],
+          default: [],
+        },
+
+        suggestions: {
+          type: [String],
+          default: [],
+        },
       },
     },
 

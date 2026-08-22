@@ -6,6 +6,8 @@ import {
   refreshAccessToken,
   logout,
   googleLogin,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -26,5 +28,13 @@ router.post("/refresh", refreshAccessToken);
 // Logout
 router.post("/logout", logout);
 
+// Google Login
 router.post("/google", googleLogin);
+
+// Forgot Password
+router.post("/forgot-password", forgotPassword);
+
+// Reset Password
+router.post("/reset-password/:token", resetPassword);
+
 export default router;

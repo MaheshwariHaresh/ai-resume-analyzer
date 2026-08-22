@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import minimumDelay from "../utils/minimumDelay";
 
 import { Bell, Search, ChevronDown, User, LogOut } from "lucide-react";
 
@@ -41,7 +42,7 @@ const Topbar = () => {
   const handleLogout = async () => {
     setIsProfileOpen(false);
 
-    await logout();
+    await minimumDelay(logout());
 
     navigate("/login");
   };

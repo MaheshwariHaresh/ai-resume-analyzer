@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BriefcaseBusiness,
   Sparkles,
@@ -7,24 +6,22 @@ import {
   X,
 } from "lucide-react";
 
-const JobDescription = () => {
-  const [jobDescription, setJobDescription] = useState("");
-
+const JobDescription = ({ jobDescript, setJobDescript }) => {
   const maxCharacters = 10000;
 
   const handleChange = (e) => {
     const value = e.target.value;
 
     if (value.length <= maxCharacters) {
-      setJobDescription(value);
+      setJobDescript(value);
     }
   };
 
   const handleClear = () => {
-    setJobDescription("");
+    setJobDescript("");
   };
 
-  const characterCount = jobDescription.length;
+  const characterCount = jobDescript.length;
 
   const features = [
     {
@@ -104,7 +101,7 @@ const JobDescription = () => {
           <div className="relative">
             <textarea
               id="job-description"
-              value={jobDescription}
+              value={jobDescript}
               onChange={handleChange}
               rows={11}
               placeholder={`Paste the complete job description here...
@@ -115,7 +112,7 @@ We are looking for a Backend Developer with experience in Node.js, Express.js, M
               className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-5 py-4 pr-12 text-sm text-gray-700 placeholder:text-gray-400 leading-6 resize-none outline-none transition-all duration-200 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
             />
 
-            {jobDescription && (
+            {jobDescript && (
               <button
                 type="button"
                 onClick={handleClear}
@@ -135,7 +132,7 @@ We are looking for a Backend Developer with experience in Node.js, Express.js, M
               </span>
             </div>
 
-            {jobDescription && (
+            {jobDescript && (
               <span className="hidden sm:block text-xs font-medium text-green-600">
                 Job description added
               </span>

@@ -11,6 +11,8 @@ import {
   Target,
   MessageSquare,
   ExternalLink,
+  BriefcaseBusiness,
+  Sparkles,
 } from "lucide-react";
 
 import { getResumeDetails } from "../apis/resumeApi";
@@ -32,7 +34,7 @@ const ResumeDetails = () => {
 
         const { data } = await getResumeDetails(id);
 
-        console.log(data);
+        console.log("Resume Details:", data);
 
         setResume(data);
       } catch (error) {
@@ -50,7 +52,7 @@ const ResumeDetails = () => {
   }, [id]);
 
   /* =====================================================
-     Loading Skeleton
+     Loading
   ===================================================== */
 
   if (loading) {
@@ -58,7 +60,7 @@ const ResumeDetails = () => {
   }
 
   /* =====================================================
-     Error State
+     Error
   ===================================================== */
 
   if (error) {
@@ -87,11 +89,59 @@ const ResumeDetails = () => {
 
   if (!resume) return null;
 
+  /* =====================================================
+     Analysis Response
+     
+     Expected structure:
+
+     analysis: {
+       atsScore,
+       overallVerdict,
+       summary,
+       sectionScores,
+       strengths,
+       weaknesses,
+       recommendedSkills,
+       suggestions,
+       interviewQuestions
+     }
+  ===================================================== */
+
   const analysis = resume.analysis || {};
+
   const sectionScores = analysis.sectionScores || {};
 
+  const strengths = Array.isArray(analysis.strengths) ? analysis.strengths : [];
+
+  const weaknesses = Array.isArray(analysis.weaknesses)
+    ? analysis.weaknesses
+    : [];
+
+  const recommendedSkills = Array.isArray(analysis.recommendedSkills)
+    ? analysis.recommendedSkills
+    : [];
+
+  const suggestions = Array.isArray(analysis.suggestions)
+    ? analysis.suggestions
+    : [];
+
+  const interviewQuestions = Array.isArray(analysis.interviewQuestions)
+    ? analysis.interviewQuestions
+    : [];
+
   /* =====================================================
-     Helpers
+     Optional Job Description
+
+     The backend may store JD directly on resume.
+  ===================================================== */
+
+  const jobDescription =
+    typeof resume.jobDescription === "string" ? resume.jobDescription : "";
+
+  const hasJobDescription = Boolean(jobDescription.trim());
+
+  /* =====================================================
+     Score Helpers
   ===================================================== */
 
   const getScoreColor = (score = 0) => {
@@ -108,36 +158,56 @@ const ResumeDetails = () => {
     return "bg-red-50 border-red-200";
   };
 
+  const getScoreBorder = (score = 0) => {
+    if (score >= 80) return "border-green-200";
+    if (score >= 60) return "border-yellow-200";
+
+    return "border-red-200";
+  };
+
+  const getScoreBar = (score = 0) => {
+    if (score >= 80) return "bg-green-500";
+    if (score >= 60) return "bg-yellow-500";
+
+    return "bg-red-500";
+  };
+
+  /* =====================================================
+     Section Scores
+  ===================================================== */
+
   const sections = [
     {
       name: "Contact Information",
-      score: sectionScores.contactInfo || 0,
+      score: Number(sectionScores.contactInfo) || 0,
     },
     {
       name: "Experience",
-      score: sectionScores.experience || 0,
+      score: Number(sectionScores.experience) || 0,
     },
     {
       name: "Skills",
-      score: sectionScores.skills || 0,
+      score: Number(sectionScores.skills) || 0,
     },
     {
       name: "Education",
-      score: sectionScores.education || 0,
+      score: Number(sectionScores.education) || 0,
     },
     {
       name: "Projects",
-      score: sectionScores.projects || 0,
+      score: Number(sectionScores.projects) || 0,
     },
     {
       name: "Keywords",
-      score: sectionScores.keywords || 0,
+      score: Number(sectionScores.keywords) || 0,
     },
     {
       name: "Formatting",
-      score: sectionScores.formatting || 0,
+      score: Number(sectionScores.formatting) || 0,
     },
   ];
+
+  const atsScore = Number(analysis.atsScore) || 0;
 
   return (
     <div className="space-y-8">
@@ -176,6 +246,13 @@ const ResumeDetails = () => {
                 <p className="text-sm text-gray-500 mt-1.5 truncate max-w-xl">
                   {resume.originalFileName}
                 </p>
+
+                {hasJobDescription && (
+                  <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-xs font-semibold">
+                    <BriefcaseBusiness size={14} />
+                    Job Description Included
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -216,20 +293,12 @@ const ResumeDetails = () => {
 
           <div className="flex items-center justify-center py-8">
             <div
-              className={`w-40 h-40 rounded-full border-[14px] flex flex-col items-center justify-center ${
-                analysis.atsScore >= 80
-                  ? "border-green-200"
-                  : analysis.atsScore >= 60
-                    ? "border-yellow-200"
-                    : "border-red-200"
-              }`}
+              className={`w-40 h-40 rounded-full border-[14px] flex flex-col items-center justify-center ${getScoreBorder(
+                atsScore,
+              )}`}
             >
-              <span
-                className={`text-5xl font-bold ${getScoreColor(
-                  analysis.atsScore,
-                )}`}
-              >
-                {analysis.atsScore || 0}
+              <span className={`text-5xl font-bold ${getScoreColor(atsScore)}`}>
+                {atsScore}
               </span>
 
               <span className="text-gray-400 text-sm">out of 100</span>
@@ -239,8 +308,8 @@ const ResumeDetails = () => {
           <div className="text-center">
             <span
               className={`inline-block px-4 py-2 rounded-full font-semibold ${getScoreBg(
-                analysis.atsScore,
-              )} ${getScoreColor(analysis.atsScore)}`}
+                atsScore,
+              )} ${getScoreColor(atsScore)}`}
             >
               {analysis.overallVerdict || "Not Available"}
             </span>
@@ -250,9 +319,18 @@ const ResumeDetails = () => {
         {/* Summary */}
 
         <div className="lg:col-span-2 bg-white border rounded-2xl p-8 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900">Resume Summary</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-gray-900">Resume Summary</h2>
 
-          <p className="text-gray-600 leading-8 mt-5">
+            {hasJobDescription && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold">
+                <Sparkles size={13} />
+                JD-Aware Analysis
+              </span>
+            )}
+          </div>
+
+          <p className="text-gray-600 leading-8 mt-5 whitespace-pre-line">
             {analysis.summary || "No summary available."}
           </p>
         </div>
@@ -275,7 +353,7 @@ const ResumeDetails = () => {
               key={section.name}
               className="bg-white border rounded-2xl p-5 shadow-sm"
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-3">
                 <h3 className="font-semibold text-gray-700">{section.name}</h3>
 
                 <span className={`font-bold ${getScoreColor(section.score)}`}>
@@ -285,15 +363,11 @@ const ResumeDetails = () => {
 
               <div className="w-full h-2 bg-gray-100 rounded-full mt-4 overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${
-                    section.score >= 80
-                      ? "bg-green-500"
-                      : section.score >= 60
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                  }`}
+                  className={`h-full rounded-full ${getScoreBar(
+                    section.score,
+                  )}`}
                   style={{
-                    width: `${Math.min(section.score, 100)}%`,
+                    width: `${Math.min(Math.max(section.score, 0), 100)}%`,
                   }}
                 />
               </div>
@@ -303,7 +377,7 @@ const ResumeDetails = () => {
       </section>
 
       {/* =================================================
-          Strengths & Weaknesses
+          Strengths + Weaknesses
       ================================================= */}
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -315,12 +389,18 @@ const ResumeDetails = () => {
               <CheckCircle className="text-green-600" />
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900">Strengths</h2>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Strengths</h2>
+
+              <p className="text-gray-500 text-sm mt-1">
+                Strong points identified from your resume.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
-            {analysis.strengths?.length > 0 ? (
-              analysis.strengths.map((strength, index) => (
+            {strengths.length > 0 ? (
+              strengths.map((strength, index) => (
                 <div key={index} className="flex gap-3 text-gray-600 leading-7">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-1 shrink-0" />
 
@@ -341,12 +421,18 @@ const ResumeDetails = () => {
               <AlertTriangle className="text-red-600" />
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900">Weaknesses</h2>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Weaknesses</h2>
+
+              <p className="text-gray-500 text-sm mt-1">
+                Areas that could be improved based on the resume.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
-            {analysis.weaknesses?.length > 0 ? (
-              analysis.weaknesses.map((weakness, index) => (
+            {weaknesses.length > 0 ? (
+              weaknesses.map((weakness, index) => (
                 <div key={index} className="flex gap-3 text-gray-600 leading-7">
                   <AlertTriangle className="w-5 h-5 text-red-500 mt-1 shrink-0" />
 
@@ -361,43 +447,65 @@ const ResumeDetails = () => {
       </div>
 
       {/* =================================================
-          Missing Skills
+          Recommended Skills
       ================================================= */}
 
       <section className="bg-white border rounded-2xl p-7 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-            <Target className="text-orange-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <Sparkles className="text-blue-600" />
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Missing Skills</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Recommended Skills
+            </h2>
 
             <p className="text-gray-500 text-sm mt-1">
-              Skills that could improve your resume and job-market
-              competitiveness.
+              {hasJobDescription
+                ? "Skills that could strengthen your profile for the provided job description."
+                : "Skills that could strengthen your profile based on your existing career direction and experience."}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {analysis.missingSkills?.length > 0 ? (
-            analysis.missingSkills.map((skill, index) => (
+        {recommendedSkills.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {recommendedSkills.map((skill, index) => (
               <span
                 key={index}
-                className="px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-xl font-medium"
+                className={`px-4 py-2 rounded-xl font-medium ${
+                  hasJobDescription
+                    ? "bg-purple-50 border border-purple-200 text-purple-700"
+                    : "bg-blue-50 border border-blue-200 text-blue-700"
+                }`}
               >
                 {skill}
               </span>
-            ))
-          ) : (
-            <p className="text-gray-500">No missing skills identified.</p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-gray-50 border border-gray-100 rounded-xl p-5">
+            <p className="text-gray-500">
+              No specific skill recommendations were identified.
+            </p>
+
+            {!hasJobDescription && (
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard/analyze")}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+              >
+                <BriefcaseBusiness size={17} />
+                Analyze With Job Description
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* =================================================
-          AI Suggestions
+          Suggestions
       ================================================= */}
 
       <section className="bg-white border rounded-2xl p-7 shadow-sm">
@@ -410,14 +518,16 @@ const ResumeDetails = () => {
             <h2 className="text-xl font-bold text-gray-900">AI Suggestions</h2>
 
             <p className="text-gray-500 text-sm mt-1">
-              Recommended improvements based on your resume analysis.
+              {hasJobDescription
+                ? "Actionable recommendations based on your resume and the provided job description."
+                : "Specific and actionable improvements for your resume."}
             </p>
           </div>
         </div>
 
         <div className="space-y-4">
-          {analysis.suggestions?.length > 0 ? (
-            analysis.suggestions.map((suggestion, index) => (
+          {suggestions.length > 0 ? (
+            suggestions.map((suggestion, index) => (
               <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-xl">
                 <div className="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-700 flex items-center justify-center font-bold shrink-0">
                   {index + 1}
@@ -448,14 +558,16 @@ const ResumeDetails = () => {
             </h2>
 
             <p className="text-gray-500 text-sm mt-1">
-              Practice questions generated from your resume.
+              {hasJobDescription
+                ? "Practice questions based on your resume and the provided job description."
+                : "Practice questions based primarily on your resume."}
             </p>
           </div>
         </div>
 
         <div className="space-y-4">
-          {analysis.interviewQuestions?.length > 0 ? (
-            analysis.interviewQuestions.map((question, index) => (
+          {interviewQuestions.length > 0 ? (
+            interviewQuestions.map((question, index) => (
               <div
                 key={index}
                 className="border rounded-xl p-5 hover:border-purple-300 transition"
@@ -510,12 +622,11 @@ const ResumeDetails = () => {
 
 const ResumeDetailsSkeleton = () => {
   const sectionSkeletons = Array.from({ length: 7 });
-
   const listSkeletons = Array.from({ length: 3 });
 
   return (
     <div className="space-y-8 animate-pulse">
-      {/* Header Skeleton */}
+      {/* Header */}
 
       <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
@@ -537,11 +648,9 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </div>
 
-      {/* ATS + Summary Skeleton */}
+      {/* ATS + Summary */}
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* ATS */}
-
         <div className="lg:col-span-1 bg-white border rounded-2xl p-8 shadow-sm">
           <div className="flex items-center gap-3">
             <Skeleton className="w-11 h-11 rounded-xl" />
@@ -561,8 +670,6 @@ const ResumeDetailsSkeleton = () => {
           </div>
         </div>
 
-        {/* Summary */}
-
         <div className="lg:col-span-2 bg-white border rounded-2xl p-8 shadow-sm">
           <Skeleton className="h-7 w-48" />
 
@@ -576,7 +683,7 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </div>
 
-      {/* Section Scores Skeleton */}
+      {/* Section Scores */}
 
       <section>
         <div className="flex items-center gap-3 mb-5">
@@ -601,7 +708,7 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </section>
 
-      {/* Strengths + Weaknesses Skeleton */}
+      {/* Strengths + Weaknesses */}
 
       <div className="grid lg:grid-cols-2 gap-6">
         {Array.from({ length: 2 }).map((_, cardIndex) => (
@@ -630,15 +737,15 @@ const ResumeDetailsSkeleton = () => {
         ))}
       </div>
 
-      {/* Missing Skills Skeleton */}
+      {/* Recommended Skills */}
 
       <section className="bg-white border rounded-2xl p-7 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <Skeleton className="w-10 h-10 rounded-xl" />
 
           <div className="space-y-2">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-80" />
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-96 max-w-full" />
           </div>
         </div>
 
@@ -654,7 +761,7 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </section>
 
-      {/* Suggestions Skeleton */}
+      {/* Suggestions */}
 
       <section className="bg-white border rounded-2xl p-7 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
@@ -680,7 +787,7 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </section>
 
-      {/* Interview Questions Skeleton */}
+      {/* Interview Questions */}
 
       <section className="bg-white border rounded-2xl p-7 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
@@ -706,7 +813,7 @@ const ResumeDetailsSkeleton = () => {
         </div>
       </section>
 
-      {/* Bottom CTA Skeleton */}
+      {/* CTA */}
 
       <div className="bg-white border rounded-2xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div className="space-y-3">

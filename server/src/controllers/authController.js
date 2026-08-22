@@ -6,6 +6,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import apiError from "../utils/apiError.js";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 import {
   generateAccessToken,
@@ -487,5 +488,267 @@ export const logout = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Logout successful.",
+  });
+});
+
+/**
+ * @route POST /api/auth/forgot-password
+ * @access Public
+ *
+ * Send password reset email.
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  /*
+   * Validation
+   */
+  if (!email) {
+    throw new apiError(400, "Email is required.");
+  }
+
+  /*
+   * Find user.
+   */
+  const user = await User.findOne({
+    email: email.toLowerCase().trim(),
+  });
+
+  console.log("user", user);
+
+  /*
+   * Always return the same response if the
+   * account does not exist.
+   *
+   * This prevents email enumeration.
+   */
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    });
+  }
+
+  /*
+   * Google users do not have a local password.
+   */
+  if (user.authProvider === "google") {
+    return res.status(200).json({
+      success: true,
+      message:
+        "This account uses Google Sign-In. Password reset is not available. Please continue with Google.",
+      authProvider: "google",
+    });
+  }
+
+  /*
+   * Generate cryptographically secure random token.
+   *
+   * This raw token is sent to the user.
+   */
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  /*
+   * Store only the hash in MongoDB.
+   */
+  const resetTokenHash = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  /*
+   * Reset token expires after 15 minutes.
+   */
+  const resetPasswordExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  /*
+   * Save hashed token and expiry.
+   */
+  user.resetPasswordTokenHash = resetTokenHash;
+  user.resetPasswordExpiresAt = resetPasswordExpiresAt;
+
+  await user.save();
+
+  /*
+   * Create frontend reset URL.
+   */
+  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+  /*
+   * Send reset email.
+   */
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: "Reset Your ResumeAI Password",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 30px;">
+          
+          <h2 style="color: #2563eb;">
+            Reset Your Password
+          </h2>
+
+          <p>
+            Hello ${user.fullName},
+          </p>
+
+          <p>
+            We received a request to reset your ResumeAI account password.
+          </p>
+
+          <p>
+            Click the button below to create a new password:
+          </p>
+
+          <div style="margin: 30px 0;">
+            <a
+              href="${resetUrl}"
+              style="
+                display: inline-block;
+                background: #2563eb;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: bold;
+              "
+            >
+              Reset Password
+            </a>
+          </div>
+
+          <p>
+            This link will expire in <strong>15 minutes</strong>.
+          </p>
+
+          <p>
+            If you did not request a password reset, you can safely ignore this email.
+          </p>
+
+          <p>
+            Regards,<br />
+            ResumeAI Team
+          </p>
+
+        </div>
+      `,
+    });
+  } catch (error) {
+    /*
+     * Do not leave a valid reset token behind
+     * if email delivery fails.
+     */
+    user.resetPasswordTokenHash = null;
+    user.resetPasswordExpiresAt = null;
+
+    await user.save();
+
+    console.error("Password Reset Email Error:", error);
+
+    throw new apiError(
+      500,
+      "Unable to send password reset email. Please try again later.",
+    );
+  }
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "If an account exists with this email, a password reset link has been sent.",
+  });
+});
+
+/**
+ * @route POST /api/auth/reset-password/:token
+ * @access Public
+ *
+ * Reset user password using a valid reset token.
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  /*
+   * Validation
+   */
+  if (!token) {
+    throw new apiError(400, "Reset token is required.");
+  }
+
+  if (!password) {
+    throw new apiError(400, "New password is required.");
+  }
+
+  if (password.length < 6) {
+    throw new apiError(400, "Password must be at least 6 characters long.");
+  }
+
+  /*
+   * Hash token received from frontend.
+   */
+  const resetTokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  /*
+   * Find user with valid, non-expired token.
+   */
+  const user = await User.findOne({
+    resetPasswordTokenHash: resetTokenHash,
+    resetPasswordExpiresAt: {
+      $gt: new Date(),
+    },
+  });
+
+  /*
+   * Invalid or expired token.
+   */
+  if (!user) {
+    throw new apiError(400, "Password reset link is invalid or has expired.");
+  }
+
+  /*
+   * Hash new password.
+   */
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  /*
+   * Update password.
+   */
+  user.password = hashedPassword;
+
+  /*
+   * Clear reset token immediately.
+   *
+   * This makes the reset link one-time use.
+   */
+  user.resetPasswordTokenHash = null;
+  user.resetPasswordExpiresAt = null;
+
+  /*
+   * Save updated user.
+   */
+
+  /*
+   * Revoke existing refresh token.
+   *
+   * This logs the user out from existing sessions
+   * after changing the password.
+   */
+  user.refreshTokenHash = null;
+  user.refreshTokenExpiresAt = null;
+
+  await user.save();
+
+  /*
+   * Remove refresh cookie.
+   */
+  clearRefreshTokenCookie(res);
+
+  return res.status(200).json({
+    success: true,
+    message: "Password reset successful. Please login with your new password.",
   });
 });

@@ -50,6 +50,16 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    resetPasswordTokenHash: {
+      type: String,
+      default: null,
+    },
+
+    resetPasswordExpiresAt: {
+      type: Date,
+      default: null,
+    },
     // Profile Information
     phone: {
       type: String,

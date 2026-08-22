@@ -5,29 +5,96 @@ import apiError from "../utils/apiError.js";
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
-
 // Analyze Resume
-export const analyzeResume = async (filePath, mimeType) => {
+export const analyzeResume = async (
+  filePath,
+  mimeType,
+  jobDescription = "",
+) => {
   try {
     const file = fs.readFileSync(filePath);
 
-    const prompt = `
-You are an expert ATS Resume Analyzer.
+    const normalizedJobDescription =
+      typeof jobDescription === "string" ? jobDescription.trim() : "";
 
-Analyze this resume like ResumeWorded and CVScoring.
+    const hasJobDescription = normalizedJobDescription.length > 0;
+
+    const prompt = `
+You are an expert ATS Resume Analyzer and Job Matching Assistant.
+
+The resume is provided separately as an attached file.
+
+Analyze the attached resume professionally from the perspective of:
+
+- ATS compatibility
+- Resume quality
+- Recruiter readability
+- Technical/professional relevance
+- Skills presentation
+- Experience quality
+- Project quality
+- Resume formatting
+
+${
+  hasJobDescription
+    ? `
+JOB DESCRIPTION:
+
+${normalizedJobDescription}
+
+IMPORTANT:
+
+The user has provided a job description.
+
+You MUST evaluate the attached resume against this specific job description.
+
+Identify:
+
+- Relevant matching skills
+- Important skills from the job description that are absent or weakly represented in the resume
+- Missing keywords that are genuinely relevant to this specific job
+- Gaps between the candidate profile and the job requirements
+- A realistic job match score
+- Specific recommendations for improving the resume for this job
+
+Do NOT assume that every technology mentioned in the job description is mandatory unless the job description clearly indicates that it is required.
+
+Only identify a skill as missing when:
+
+- It is explicitly mentioned or clearly required by the job description
+- It is genuinely relevant to the role
+- It is not clearly present in the resume
+
+Do not invent candidate experience with any technology or responsibility.
+`
+    : `
+NO JOB DESCRIPTION PROVIDED.
+
+Analyze the resume independently based on the candidate's existing career direction.
+
+Do NOT perform job-specific matching.
+
+Do NOT:
+
+- calculate a job match score
+- identify job-specific missing skills
+- claim that any skill is required
+- create job-specific recommendations
+
+Recommended skills should only include technologies, tools, practices, or capabilities that are genuinely relevant to the candidate's current profile and career direction.
+`
+}
 
 Return ONLY valid JSON.
 
 Never use markdown.
+Never wrap response inside code fences.
 
-Never wrap response inside \`\`\`.
-
-Return exactly this JSON:
+Return exactly this JSON structure:
 
 {
   "atsScore": 0,
   "overallVerdict": "",
-
   "summary": "",
 
   "sectionScores": {
@@ -41,43 +108,118 @@ Return exactly this JSON:
   },
 
   "strengths": [],
-
   "weaknesses": [],
-
-  "missingSkills": [],
-
+  "recommendedSkills": [],
   "suggestions": [],
+  "interviewQuestions": [],
 
-  "interviewQuestions": []
+  "jobAnalysis": {
+    "matchScore": null,
+    "matchSummary": "",
+    "matchingSkills": [],
+    "missingSkills": [],
+    "suggestions": []
+  }
 }
 
-Rules:
+IMPORTANT RULES:
 
-ATS Score must be 0-100.
+1. ATS Score must be between 0 and 100.
 
-overallVerdict should be one of:
+2. overallVerdict must be exactly one of:
 
-Excellent
+   - Excellent
+   - Good
+   - Average
+   - Poor
 
-Good
+3. Summary should contain 4-5 concise lines.
 
-Average
+4. Identify strengths based ONLY on information actually present in the resume.
 
-Poor
+5. Identify weaknesses based ONLY on actual problems or gaps visible in the resume.
 
-Summary should contain 4-5 lines.
+6. Do NOT invent experience, skills, certifications, projects, education, or technologies.
 
-Generate minimum:
+7. recommendedSkills must contain skills that would genuinely strengthen the candidate's profile.
 
-5 strengths
+8. If a job description is provided, recommendedSkills should prioritize skills that:
 
-5 weaknesses
+   - are relevant to the job description
+   - are absent or weakly represented in the resume
+   - align with the candidate's existing career direction
 
-8 missing skills
+9. If no job description is provided, recommendedSkills should be based on:
 
-8 suggestions
+   - existing technologies
+   - existing projects
+   - career direction
+   - demonstrated technical level
 
-10 interview questions
+10. Do NOT classify a skill as missing simply because it is popular in the technology industry.
+
+11. Do NOT automatically recommend Docker, Kubernetes, AWS, CI/CD, Redis, or other technologies unless they are genuinely relevant.
+
+12. Never claim that a skill is required unless the job description explicitly indicates that requirement.
+
+13. Do NOT recommend a technology only because it appears in the job description if it has no meaningful relevance to the candidate's career direction.
+
+14. If there are no clearly useful recommended skills, return an empty array.
+
+15. Suggestions must be specific and actionable for THIS resume.
+
+16. If a job description is provided, suggestions should also explain how the resume could be improved for that specific job.
+
+17. Interview questions should primarily be based on:
+
+   - technologies actually mentioned in the resume
+   - projects actually mentioned in the resume
+   - experience actually mentioned in the resume
+   - skills actually mentioned in the resume
+
+18. If a job description is provided, some interview questions may also target important responsibilities or technologies mentioned in the job description.
+
+However, NEVER assume the candidate has experience with a technology merely because it appears in the job description.
+
+19. If NO job description is provided:
+
+   jobAnalysis.matchScore MUST be null.
+
+   jobAnalysis.matchSummary MUST be "".
+
+   jobAnalysis.matchingSkills MUST be [].
+
+   jobAnalysis.missingSkills MUST be [].
+
+   jobAnalysis.suggestions MUST be [].
+
+20. If a job description IS provided:
+
+   jobAnalysis.matchScore MUST be between 0 and 100.
+
+   jobAnalysis.matchSummary must briefly explain the candidate's fit for the job.
+
+   jobAnalysis.matchingSkills must contain only skills actually supported by the resume and relevant to the job description.
+
+   jobAnalysis.missingSkills must contain only genuinely relevant skills explicitly required or strongly requested by the job description and not clearly present in the resume.
+
+   jobAnalysis.suggestions must contain specific recommendations for improving the resume for this particular job.
+
+21. Generate approximately:
+
+   - 5 relevant strengths
+   - 5 relevant weaknesses
+   - 3-6 relevant recommended skills
+   - 5-8 actionable suggestions
+   - 10 interview questions
+
+22. Quality is more important than quantity.
+
+23. Do not invent information just to satisfy a requested number.
+
+24. The resume is provided as an attached file. Analyze that attached resume directly.
+
+25. Do not expect or require resume text to be provided inside this prompt.
 
 Return JSON only.
 `;
@@ -88,6 +230,7 @@ Return JSON only.
       try {
         const response = await ai.models.generateContent({
           model: "gemini-3.6-flash",
+
           contents: [
             {
               inlineData: {
@@ -101,13 +244,96 @@ Return JSON only.
           ],
         });
 
-        let text = response.text.trim();
+        let text = response.text?.trim();
 
-        text = text.replace(/```json/g, "");
-        text = text.replace(/```/g, "");
-        text = text.trim();
+        if (!text) {
+          throw new Error("Gemini returned an empty response.");
+        }
 
-        return JSON.parse(text);
+        // Remove markdown code fences if Gemini adds them
+        text = text
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/\s*```$/i, "")
+          .trim();
+
+        const analysis = JSON.parse(text);
+
+        /*
+         * Ensure response always has the expected structure.
+         * This prevents frontend crashes when Gemini omits an optional field.
+         */
+        return {
+          atsScore:
+            typeof analysis.atsScore === "number"
+              ? Math.min(Math.max(analysis.atsScore, 0), 100)
+              : 0,
+
+          overallVerdict: analysis.overallVerdict || "Average",
+
+          summary: analysis.summary || "",
+
+          sectionScores: {
+            contactInfo: analysis.sectionScores?.contactInfo || 0,
+            experience: analysis.sectionScores?.experience || 0,
+            skills: analysis.sectionScores?.skills || 0,
+            education: analysis.sectionScores?.education || 0,
+            projects: analysis.sectionScores?.projects || 0,
+            keywords: analysis.sectionScores?.keywords || 0,
+            formatting: analysis.sectionScores?.formatting || 0,
+          },
+
+          strengths: Array.isArray(analysis.strengths)
+            ? analysis.strengths
+            : [],
+
+          weaknesses: Array.isArray(analysis.weaknesses)
+            ? analysis.weaknesses
+            : [],
+
+          recommendedSkills: Array.isArray(analysis.recommendedSkills)
+            ? analysis.recommendedSkills
+            : [],
+
+          suggestions: Array.isArray(analysis.suggestions)
+            ? analysis.suggestions
+            : [],
+
+          interviewQuestions: Array.isArray(analysis.interviewQuestions)
+            ? analysis.interviewQuestions
+            : [],
+
+          jobAnalysis: {
+            matchScore:
+              hasJobDescription &&
+              typeof analysis.jobAnalysis?.matchScore === "number"
+                ? Math.min(Math.max(analysis.jobAnalysis.matchScore, 0), 100)
+                : null,
+
+            matchSummary:
+              hasJobDescription && analysis.jobAnalysis?.matchSummary
+                ? analysis.jobAnalysis.matchSummary
+                : "",
+
+            matchingSkills:
+              hasJobDescription &&
+              Array.isArray(analysis.jobAnalysis?.matchingSkills)
+                ? analysis.jobAnalysis.matchingSkills
+                : [],
+
+            missingSkills:
+              hasJobDescription &&
+              Array.isArray(analysis.jobAnalysis?.missingSkills)
+                ? analysis.jobAnalysis.missingSkills
+                : [],
+
+            suggestions:
+              hasJobDescription &&
+              Array.isArray(analysis.jobAnalysis?.suggestions)
+                ? analysis.jobAnalysis.suggestions
+                : [],
+          },
+        };
       } catch (error) {
         console.error(
           `Gemini analysis attempt ${attempt}/${maxAttempts} failed:`,
@@ -119,7 +345,6 @@ Return JSON only.
           error?.error?.code === 503 ||
           error?.error?.status === "UNAVAILABLE";
 
-        // Retry only temporary Gemini availability errors
         if (isTemporaryError && attempt < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
           continue;

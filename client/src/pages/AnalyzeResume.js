@@ -3,8 +3,11 @@ import UploadSection from "../components/analyze/UploadSection";
 import JobDescription from "../components/analyze/JobDescription";
 import AIFeaturesCard from "../components/analyze/AIFeaturesCard";
 import RecentUploads from "../components/analyze/RecentUploads";
+import { useState } from "react";
 
 const AnalyzeResume = () => {
+  const [jobDescript, setJobDescript] = useState("");
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -63,9 +66,12 @@ const AnalyzeResume = () => {
       {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <UploadSection />
+          <UploadSection jobDescript={jobDescript} />
 
-          <JobDescription />
+          <JobDescription
+            jobDescript={jobDescript}
+            setJobDescript={setJobDescript}
+          />
         </div>
 
         <AIFeaturesCard />
